@@ -194,7 +194,10 @@ class QuantumVoidFormer(nn.Module):
         self.embed_dropout = nn.Dropout(dropout)
         
         # Virtual Quantum Processor (core quantum computing engine)
-        from ..quantum_init import initialize_quantum_processor
+        try:
+            from quantum_init import initialize_quantum_processor
+        except ImportError:
+            from ..quantum_init import initialize_quantum_processor
         
         self.quantum_processor = initialize_quantum_processor(
             d_model=d_model,

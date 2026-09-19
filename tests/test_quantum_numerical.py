@@ -125,3 +125,37 @@ def test_cross_token_entanglement_concurrence():
     is_entangled, measure = em.verify_entanglement(entangled_state)
     assert is_entangled.item() is True
     assert measure.mean().item() > 0.1
+
+
+def test_quantum_voidformer_model_end_to_end():
+    """Verify QuantumVoidFormer instantiates, runs forward/backward passes, and computes gradients."""
+    from voidformer.models.quantum_voidformer import QuantumVoidFormer
+
+    vocab_size = 64
+    d_model = 32
+    seq_len = 8
+    batch_size = 2
+
+    model = QuantumVoidFormer(
+        vocab_size=vocab_size,
+        d_model=d_model,
+        n_layers=1,
+        n_heads=2,
+        n_qubits_per_token=2,
+        max_seq_len=seq_len,
+        collapse_protocol="entropy_gated",
+        enable_entanglement=True,
+    )
+
+    ids = torch.randint(0, vocab_size, (batch_size, seq_len))
+    output = model(ids, return_diagnostics=True)
+
+    assert output.logits.shape == (batch_size, seq_len, vocab_size)
+    assert torch.isfinite(output.logits).all()
+
+    loss = output.logits.sum()
+    loss.backward()
+
+    # Check that model weights received gradients
+    grad_norms = [p.grad.norm().item() for p in model.parameters() if p.grad is not None]
+    assert len(grad_norms) > 0 and any(g > 0 for g in grad_norms)

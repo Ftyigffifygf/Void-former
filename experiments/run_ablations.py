@@ -9,12 +9,41 @@ Compares:
 
 from __future__ import annotations
 
+import sys
+import types
 import time
+from pathlib import Path
+
+# Add repo root and register namespace finder so imports work standalone
+repo_root = Path(__file__).parent.parent.resolve()
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+
+class VoidFormerFinder:
+    def find_spec(self, fullname, path, target=None):
+        if fullname == "voidformer":
+            from importlib.machinery import ModuleSpec
+            from importlib.abc import Loader
+
+            class VoidFormerLoader(Loader):
+                def create_module(self, spec):
+                    mod = types.ModuleType("voidformer")
+                    mod.__path__ = [str(repo_root)]
+                    return mod
+
+                def exec_module(self, module):
+                    pass
+
+            return ModuleSpec("voidformer", VoidFormerLoader(), is_package=True)
+        return None
+
+sys.meta_path.insert(0, VoidFormerFinder())
+
 import torch
 import torch.nn as nn
 
-from models.quantum_voidformer import QuantumVoidFormer
-from models.voidformer import VoidFormerModel
+from voidformer.models.quantum_voidformer import QuantumVoidFormer
+from voidformer.models.voidformer import VoidFormerModel
 
 
 def run_ablations():

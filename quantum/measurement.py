@@ -236,7 +236,7 @@ class MeasurementLayer(nn.Module):
 
         classical_output = soft_weight * soft_output + (1 - soft_weight) * hard_output
 
-        blend = soft_weight.unsqueeze(-1).to(dtype=state.amplitudes.dtype)
+        blend = soft_weight.to(dtype=state.amplitudes.dtype)
         collapsed_amplitudes = (
             blend * soft_state.amplitudes +
             (1 - blend) * hard_state.amplitudes
