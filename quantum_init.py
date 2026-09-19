@@ -8,8 +8,12 @@ from __future__ import annotations
 from typing import Optional, Union
 import torch
 
-from quantum.quantum_processor import VirtualQuantumProcessor
-from quantum.measurement import CollapseProtocol
+try:
+    from quantum.quantum_processor import VirtualQuantumProcessor
+    from quantum.measurement import CollapseProtocol
+except ImportError:
+    from voidformer.quantum.quantum_processor import VirtualQuantumProcessor
+    from voidformer.quantum.measurement import CollapseProtocol
 
 # Global registry of initialized quantum processors
 _PROCESSOR_REGISTRY: dict[str, VirtualQuantumProcessor] = {}
