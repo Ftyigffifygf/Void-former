@@ -104,18 +104,20 @@ class SharedCrossTokenEntangler(nn.Module):
     """Architectural implementation of Cross-Token Entanglement via shared/compressed quantum state.
 
     Maintains a compressed shared quantum state register Z_shared in C^(B x 2^n_shared)
-    that interacts with individual token state vectors. Enables true non-local inter-token
-    quantum correlations across arbitrary sequence lengths.
+    and position-dependent phase coupling that interacts with individual token state vectors.
+    Enables true non-local inter-token quantum correlations that differ between token pairs.
     """
 
     def __init__(
         self,
         n_qubits_per_token: int,
+        max_seq_len: int = 512,
         n_shared_qubits: int = 2,
         device: Optional[torch.device] = None,
     ):
         super().__init__()
         self.n_token_qubits = n_qubits_per_token
+        self.max_seq_len = max_seq_len
         self.n_shared_qubits = n_shared_qubits
         self.token_dim = 2 ** n_qubits_per_token
         self.shared_dim = 2 ** n_shared_qubits
@@ -128,14 +130,21 @@ class SharedCrossTokenEntangler(nn.Module):
         self.shared_to_token = nn.Parameter(
             torch.randn(self.shared_dim, self.token_dim, dtype=torch.complex64) / math.sqrt(self.shared_dim)
         )
-        # Learnable phase coupling parameter
+        # Position-dependent coupling phase parameters (T, 2^n_shared)
+        self.position_phases = nn.Parameter(
+            torch.randn(max_seq_len, self.shared_dim) * 0.1
+        )
+        # Pairwise quantum kernel projection matrix for token-pair interaction
+        self.pairwise_kernel = nn.Parameter(
+            torch.randn(self.token_dim, self.token_dim, dtype=torch.complex64) / math.sqrt(self.token_dim)
+        )
         self.coupling_phase = nn.Parameter(torch.tensor(math.pi / 4))
 
     def entangle_tokens(
         self,
         state: QuantumStateVector,
     ) -> Tuple[QuantumStateVector, torch.Tensor]:
-        """Entangle token states through the shared compressed quantum register.
+        """Entangle token states through the shared compressed quantum register and position-dependent kernels.
 
         Args:
             state: Quantum state vector (B, T, 2^n)
@@ -146,22 +155,31 @@ class SharedCrossTokenEntangler(nn.Module):
         B, T, dim = state.amplitudes.shape
         amps = state.amplitudes  # (B, T, 2^n_token)
 
-        # 1. Pool token states into shared register Z_shared (B, 2^n_shared)
-        # Z_shared = Norm( Mean_t( state_t @ W_{token->shared} ) )
-        token_projected = torch.matmul(amps, self.token_to_shared)  # (B, T, 2^n_shared)
+        # 1. Position-modulated token projections into shared register
+        pos_phases = torch.exp(1j * self.position_phases[:T, :].unsqueeze(0))  # (1, T, 2^n_shared)
+        token_projected = torch.matmul(amps, self.token_to_shared) * pos_phases  # (B, T, 2^n_shared)
+
         z_shared = token_projected.mean(dim=1)  # (B, 2^n_shared)
         z_shared_norm = torch.linalg.norm(z_shared, dim=-1, keepdim=True).clamp(min=1e-10)
         z_shared = z_shared / z_shared_norm
 
-        # 2. Phase-coupled entangling interaction:
-        # Each token state receives non-local quantum interference from Z_shared:
-        # state_t' = cos(phi) * state_t + sin(phi) * (Z_shared @ W_{shared->token})
-        shared_back = torch.matmul(z_shared.unsqueeze(1), self.shared_to_token)  # (B, 1, 2^n_token)
+        # 2. Position-specific feedback from Z_shared to tokens
+        # Each position receives distinct feedback according to its position phase
+        shared_back = torch.matmul(
+            (z_shared.unsqueeze(1) * pos_phases.conj()),
+            self.shared_to_token
+        )  # (B, T, 2^n_token)
+
+        # 3. Position-dependent token-pair interference (pair-specific correlation)
+        # Pairwise state interaction matrix P = softmax(|amps @ W @ amps^H|)
+        pair_scores = torch.abs(torch.matmul(torch.matmul(amps, self.pairwise_kernel), amps.mH))  # (B, T, T)
+        pair_weights = torch.softmax(pair_scores, dim=-1)  # (B, T, T)
+        pair_interfered = torch.matmul(pair_weights.to(dtype=amps.dtype), amps)  # (B, T, 2^n_token)
 
         cos_p = torch.cos(self.coupling_phase)
         sin_p = torch.sin(self.coupling_phase)
 
-        entangled_amps = cos_p * amps + sin_p * shared_back
+        entangled_amps = cos_p * amps + sin_p * (0.5 * shared_back + 0.5 * pair_interfered)
 
         new_state = QuantumStateVector(
             amplitudes=entangled_amps,
