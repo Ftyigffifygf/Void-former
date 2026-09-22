@@ -97,7 +97,11 @@ class MeasurementLayer(nn.Module):
 
         # Select collapse protocol
         if self.collapse_protocol == CollapseProtocol.DEFERRED:
-            classical_output, collapsed_state = self._expectation_value(quantum_state)
+            # Deferred collapse: No measurement or collapse occurs; quantum state amplitudes pass through unperturbed.
+            from .qubit_state import QubitStateManager
+            manager = QubitStateManager(n_qubits_per_token=self.n_qubits)
+            classical_output = manager.to_classical_embedding(quantum_state, d_model=self.d_output)
+            collapsed_state = quantum_state
 
         elif self.collapse_protocol == CollapseProtocol.HARD:
             classical_output, collapsed_state = self._hard_collapse(
