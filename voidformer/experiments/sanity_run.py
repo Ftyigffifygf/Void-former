@@ -12,10 +12,10 @@ import os
 
 import torch
 
-from ..datasets import build_tokenizer
-from ..models import VoidFormerModel
-from ..utils import load_config, set_seed, get_logger
-from ..visualization import (
+from voidformer.datasets import build_tokenizer
+from voidformer.models import VoidFormerModel
+from voidformer.utils import load_config, set_seed, get_logger
+from voidformer.visualization import (
     plot_collapse_trajectory,
     plot_entropy_heatmap,
     plot_geodesic_distribution,

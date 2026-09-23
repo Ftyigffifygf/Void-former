@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 import torch
 import torch.nn as nn
 
-from ..layers import DualEmbedding, RiemannianGeodesicTracker, VoidFormerBlock
+from voidformer.layers import DualEmbedding, RiemannianGeodesicTracker, VoidFormerBlock
 
 
 @dataclass

@@ -13,7 +13,7 @@ import pytest
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 
-from quantum import (
+from voidformer.quantum import (
     QuantumStateVector,
     QubitStateManager,
     HadamardGate,

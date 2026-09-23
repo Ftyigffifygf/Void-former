@@ -237,28 +237,33 @@ class EntanglementManager(nn.Module):
         token_pairs: list[tuple[int, int]],
         entanglement_strength: float = 1.0,
     ) -> QuantumStateVector:
-        """Entangle specified pairs of tokens via CNOT gates."""
-        current_state = state
-        CNOT = self.gate_registry.get_gate("CNOT")
+        """Entangle specified pairs of token positions i and j across the sequence axis."""
+        B, T, dim = state.amplitudes.shape
+        amps = state.amplitudes.clone()
+        theta = torch.tensor(entanglement_strength * math.pi / 4, device=amps.device, dtype=torch.float32)
+        cos_t = torch.cos(theta).to(dtype=amps.dtype)
+        sin_t = torch.sin(theta).to(dtype=amps.dtype)
 
         for (i, j) in token_pairs:
-            if i >= state.amplitudes.shape[1] or j >= state.amplitudes.shape[1]:
+            if i == j:
+                continue
+            if i >= T or j >= T or i < 0 or j < 0:
                 continue
 
-            token_mask = torch.zeros(
-                state.amplitudes.shape[0],
-                state.amplitudes.shape[1],
-                device=self.device,
-            )
-            token_mask[:, [i, j]] = entanglement_strength
+            a_i = amps[:, i, :].clone()
+            a_j = amps[:, j, :].clone()
 
-            current_state = CNOT.apply(
-                current_state,
-                target_qubits=[0, 1],
-                token_indices=token_mask,
-            )
+            # Cross-token unitary entangling coupling U_ij(theta)
+            amps[:, i, :] = cos_t * a_i + 1j * sin_t * a_j
+            amps[:, j, :] = 1j * sin_t * a_i + cos_t * a_j
 
-        return current_state
+        new_state = QuantumStateVector(
+            amplitudes=amps,
+            n_qubits=state.n_qubits,
+            global_phase=state.global_phase,
+        ).normalize()
+
+        return new_state
 
     def create_ghz_state(
         self,
@@ -284,10 +289,11 @@ class EntanglementManager(nn.Module):
         state: QuantumStateVector,
         partition_a: list[int],
     ) -> torch.Tensor:
-        """Compute entanglement entropy of bipartition A|B."""
-        reduced_probs = state.partial_trace(partition_a)
-        reduced_probs = reduced_probs.clamp(min=1e-10)
-        return -(reduced_probs * torch.log2(reduced_probs)).sum(dim=-1)
+        """Compute entanglement entropy of bipartition A|B via von Neumann entropy of ρ_A."""
+        rho_a = state.partial_trace(partition_a)
+        eigvals = torch.linalg.eigvalsh(rho_a)
+        eigvals = eigvals.clamp(min=1e-10)
+        return -(eigvals * torch.log2(eigvals)).sum(dim=-1)
 
     def compute_concurrence(
         self,
@@ -326,10 +332,10 @@ class EntanglementManager(nn.Module):
             for i in range(T):
                 for k_idx in range(len(indices[i])):
                     j = indices[i, k_idx].item()
-                    if values[i, k_idx] > 0.1:
+                    if i != j and values[i, k_idx] > 0.1:
                         token_pairs.append((i, j))
         else:
-            token_pairs = [(i, j) for i in range(T) for j in range(i + 1)]
+            token_pairs = [(i, j) for i in range(T) for j in range(i + 1, T)]
 
         entangled_state = self.create_pairwise_entanglement(
             state,
