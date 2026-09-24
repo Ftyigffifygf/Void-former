@@ -1,15 +1,14 @@
 # VoidFormer: Virtual Quantum Computing Simulator & Processor
 
-**🔬 Quantum-Enhanced Neural Architecture** — A research-grade quantum computing simulator
-integrated with deep learning. The architecture operates on true quantum principles:
+**🔬 Virtual Quantum-Statevector Neural Architecture** — A research-grade classical GPU/CPU simulator
+of quantum mechanics integrated with deep learning language models. The architecture operates on virtualized quantum principles:
 
-1. **⚛️ Quantum Superposition**: Tokens exist as state vectors `|ψ⟩ = Σᵢ αᵢ|i⟩` in 2^n Hilbert space
-2. **🔗 Entanglement**: Non-local quantum correlations between tokens via CNOT, Bell states
+1. **⚛️ Quantum Superposition**: Tokens exist as complex state vectors `|ψ⟩ = Σᵢ αᵢ|i⟩` in 2^n Hilbert space
+2. **🔗 Entanglement**: Non-local quantum correlations between tokens via inter-token CNOT and Bell states
 3. **🎯 Quantum Gates**: Unitary operators (H, X, Y, Z, CNOT, Toffoli) manipulate quantum states
 4. **📊 Measurement**: Born rule collapse `P(i) = |αᵢ|²` converts quantum → classical output
 
-> ✨ This **IS** quantum computing simulation. It uses complex-valued state vectors,
-> unitary gate operations, and quantum measurement to process information.
+> 💡 **Note on Hardware Architecture:** VoidFormer is a classical GPU/CPU statevector simulator that models exact complex-valued quantum amplitude evolution, unitary gate matrix transformations, and Born rule collapse in PyTorch. It provides a software simulation bridge for research into quantum-enhanced neural architectures.
 
 ```
 Classical:  |T⟩ = α|S_c⟩ + β|S_v⟩ + γ·I(|S_c⟩,|S_v⟩)
@@ -29,34 +28,41 @@ collapses to deterministic output at measurement.
 ## 🚀 Quick Start
 
 ```bash
-# 1. Test quantum processor
+# 1. Install dependencies
+pip install -r requirements.txt
+pip install -e .
+
+# 2. Test quantum processor
 python -m voidformer.quantum_init
 
-# 2. Run comprehensive demos
+# 3. Run comprehensive demos
 python -m voidformer.demo_quantum
 
-# 3. Test temporal coherence system
+# 4. Test temporal coherence system
 python -m voidformer.demo_temporal_quantum
 
-# 4. Quick integration test
+# 5. Quick integration test
 python -m voidformer.test_quantum_simple
+
+# 6. Run unit tests
+python -m pytest
 ```
 
 ## ⚡ Features at a Glance
 
-| Component | Description | Status |
-|-----------|-------------|--------|
-| 🧮 **Qubit State Manager** | Complex state vectors in 2^n Hilbert space | ✅ |
-| 🚪 **Quantum Gates** | H, X, Y, Z, CNOT, Toffoli, Phase, T | ✅ |
-| 🔗 **Entanglement** | Bell states, GHZ, learned patterns | ✅ |
-| 📏 **Measurement** | 5 collapse protocols (hard/soft/entropy-gated) | ✅ |
-| 🔄 **Quantum Algorithms** | Grover, QFT, VQE | ✅ |
-| 🎯 **Quantum Attention** | Fidelity-based K(x,y) = \|⟨ψ(x)\|ψ(y)⟩\|² | ✅ |
-| 🧩 **Tensor Networks** | MPS/Tensor-train compression | ✅ |
-| 🤖 **Quantum LM** | Full quantum-enhanced language model | ✅ |
-| ⏰ **Temporal Coherence** | Virtual quantum clock with decoherence | ✅ |
-| 📉 **Decoherence Models** | Exponential, Gaussian, Power Law, Linear | ✅ |
-| ⚡ **Forced Collapse** | Automatic measurement at deadline | ✅ |
+| Component | Description | Status | Verification Test |
+|-----------|-------------|--------|-------------------|
+| 🧮 **Qubit State Manager** | Complex state vectors in 2^n Hilbert space | ✅ | `test_is_normalized_rtol_parameter` |
+| 🚪 **Quantum Gates** | H, X, Y, Z, CNOT, Toffoli, Phase, T | ✅ | `test_hadamard_numerical`, `test_qiskit_statevector_comparison_toffoli` |
+| 🔗 **Entanglement** | Bell states, GHZ, learned patterns | ✅ | `test_bell_state_concurrence_exact`, `test_pairwise_cross_token_entanglement` |
+| 📏 **Measurement** | 5 collapse protocols (hard/soft/deferred/expectation/entropy-gated) | ✅ | `test_hard_collapse_ste_gradient_flow`, `test_deferred_vs_expectation_collapse_protocols` |
+| 🔄 **Quantum Algorithms** | Grover, QFT, VQE | ✅ | `test_quantum_voidformer_model_end_to_end` |
+| 🎯 **Quantum Attention** | Fidelity-based K(x,y) = \|⟨ψ(x)\|ψ(y)⟩\|² | ✅ | `test_quantum_voidformer_model_end_to_end` |
+| 🧩 **Tensor Networks** | MPS/Tensor-train compression | ✅ | `test_shapes.py` |
+| 🤖 **Quantum LM** | Full quantum-enhanced language model | ✅ | `test_smoke_train.py` |
+| ⏰ **Temporal Coherence** | Virtual quantum clock with decoherence | ✅ | `demo_temporal_quantum.py` |
+| 📉 **Decoherence Models** | Exponential, Gaussian, Power Law, Linear | ✅ | `demo_temporal_quantum.py` |
+| ⚡ **Forced Collapse** | Automatic measurement at deadline | ✅ | `demo_temporal_quantum.py` |
 
 ---
 
@@ -116,11 +122,12 @@ python -m voidformer.test_quantum_simple
 ```
 voidformer/
 ├── quantum/                    # 🆕 QUANTUM COMPUTING CORE
-│   ├── qubit_state.py         #   State vectors, superposition, normalization
+│   ├── qubit_state.py         #   State vectors, superposition, normalization, partial_trace
 │   ├── quantum_gates.py       #   H, CNOT, X, Y, Z, Toffoli, Phase gates
-│   ├── entanglement.py        #   Bell states, GHZ states, concurrence
-│   ├── measurement.py         #   Born rule collapse, protocols
+│   ├── entanglement.py        #   Bell states, GHZ states, concurrence, cross-token entanglement
+│   ├── measurement.py         #   Born rule collapse, 5 protocols (hard STE, soft, deferred, etc.)
 │   ├── quantum_processor.py   #   Virtual quantum CPU, circuit execution
+│   ├── backend_integration.py #   Qiskit & Qiskit Aer simulation bridge
 │   ├── qiml.py               #   Quantum-inspired ML (tensor networks, QKA)
 │   └── __init__.py
 ├── quantum_init.py            # 🆕 QUANTUM PROCESSOR REGISTRY & ENTRY POINT
@@ -146,6 +153,7 @@ voidformer/
 ```bash
 # 1. Install dependencies
 pip install -r requirements.txt
+pip install -e .
 
 # 2. Test quantum processor
 python -m voidformer.quantum_init
@@ -189,20 +197,19 @@ print(f'Entanglement: {diagnostics.get(\"is_entangled\", False)}')
 
 ## Quantum Computing Features
 
-| Feature | Description | Status |
-|---------|-------------|--------|
-| **Qubit State Manager** | Complex state vectors `|ψ⟩` in 2^n Hilbert space | ✅ Implemented |
-| **Quantum Gates** | H, X, Y, Z, CNOT, Toffoli, Phase, T | ✅ Implemented |
-| **Entanglement** | Bell states, GHZ states, learned entanglement patterns | ✅ Implemented |
-| **Measurement** | Born rule collapse with adaptive protocols | ✅ Implemented |
-| **Quantum Circuits** | User-defined gate sequences | ✅ Implemented |
-| **Quantum Algorithms** | Grover, QFT, VQE | ✅ Implemented |
-| **Quantum Kernel Attention** | Fidelity-based attention mechanism | ✅ Implemented |
-| **Tensor Networks** | MPS/Tensor-train FFN layers | ✅ Implemented |
-| **QIML** | Quantum-inspired evolutionary optimizer | ✅ Implemented |
-| **⏰ Virtual Quantum Clock** | Temporal coherence enforcement | ✅ Implemented |
-| **📉 Decoherence Simulation** | 5 physical models (exponential, gaussian, etc.) | ✅ Implemented |
-| **⚡ Forced Collapse** | Automatic measurement at deadline | ✅ Implemented |
+| Feature | Description | Status | Verification Test |
+|---------|-------------|--------|-------------------|
+| **Qubit State Manager** | Complex state vectors `|ψ⟩` in 2^n Hilbert space | ✅ Implemented | `test_is_normalized_rtol_parameter` |
+| **Quantum Gates** | H, X, Y, Z, CNOT, Toffoli, Phase, T | ✅ Implemented | `test_hadamard_numerical`, `test_qiskit_statevector_comparison_toffoli` |
+| **Entanglement** | Bell states, GHZ states, learned entanglement patterns | ✅ Implemented | `test_bell_state_concurrence_exact`, `test_cross_token_entanglement_concurrence` |
+| **Measurement** | Born rule collapse with adaptive protocols | ✅ Implemented | `test_hard_collapse_ste_gradient_flow`, `test_deferred_vs_expectation_collapse_protocols` |
+| **Quantum Circuits** | User-defined gate sequences | ✅ Implemented | `test_quantum_voidformer_model_end_to_end` |
+| **Quantum Algorithms** | Grover, QFT, VQE | ✅ Implemented | `test_quantum_voidformer_model_end_to_end` |
+| **Quantum Kernel Attention** | Fidelity-based attention mechanism | ✅ Implemented | `test_quantum_voidformer_model_end_to_end` |
+| **Tensor Networks** | MPS/Tensor-train FFN layers | ✅ Implemented | `tests/test_shapes.py` |
+| **⏰ Virtual Quantum Clock** | Temporal coherence enforcement | ✅ Implemented | `demo_temporal_quantum.py` |
+| **📉 Decoherence Simulation** | 5 physical models (exponential, gaussian, etc.) | ✅ Implemented | `demo_temporal_quantum.py` |
+| **⚡ Forced Collapse** | Automatic measurement at deadline | ✅ Implemented | `demo_temporal_quantum.py` |
 
 ## Temporal Coherence System
 
@@ -261,51 +268,25 @@ if diagnostics["forced_collapse"]:
 
 ## Measurement Collapse Protocols
 
-| Protocol | Behavior | Use Case |
-|----------|----------|----------|
-| `hard` | Full Born rule sampling → single basis state | Final output, deterministic tasks |
-| `soft` | Probability-weighted mixture | Intermediate layers, gradient flow |
-| `expectation` | Expectation value ⟨ψ\|O\|ψ⟩ | Analysis, no collapse needed |
-| `deferred` | No collapse, keep quantum | Chained quantum operations |
-| `entropy_gated` | Adaptive: high entropy→soft, low→hard | Default, uncertainty-aware |
+| Protocol | Behavior | Use Case | Verified By |
+|----------|----------|----------|-------------|
+| `hard` | Full Born rule sampling → single basis state (STE gradient flow) | Final output, deterministic tasks | `test_hard_collapse_ste_gradient_flow` |
+| `soft` | Probability-weighted mixture | Intermediate layers, gradient flow | `test_quantum_voidformer_model_end_to_end` |
+| `expectation` | Expectation value ⟨ψ\|O\|ψ⟩ on Born probabilities | Analysis, no collapse needed | `test_deferred_vs_expectation_collapse_protocols` |
+| `deferred` | Direct amplitude projection without Born collapse | Chained quantum operations | `test_deferred_vs_expectation_collapse_protocols` |
+| `entropy_gated` | Adaptive: high entropy→soft, low→hard | Default, uncertainty-aware | `test_quantum_voidformer_model_end_to_end` |
 
-## Quantum Algorithms
-
-The system supports executing quantum algorithms on neural network embeddings:
-
-```python
-from voidformer.quantum import QuantumAlgorithm
-from voidformer.models import QuantumVoidFormer
-
-model = QuantumVoidFormer(vocab_size=50000, d_model=512, n_qubits_per_token=5)
-
-# Run Grover's search algorithm
-output = model.forward(
-    tokens,
-    quantum_algorithm=QuantumAlgorithm.GROVER_SEARCH
-)
-
-# Run Quantum Fourier Transform
-output = model.forward(
-    tokens,
-    quantum_algorithm=QuantumAlgorithm.QUANTUM_FOURIER_TRANSFORM
-)
-```
-
-## Mathematical Foundations
+## Mathematical Foundations & Self-Verifying Unit Tests
 
 ### Quantum State Representation
 
-Every token embedding is mapped to a quantum state vector in Hilbert space:
+Every token embedding is mapped to a complex quantum state vector in Hilbert space:
 
 ```
 |ψ⟩ = Σᵢ αᵢ|i⟩    where αᵢ ∈ ℂ, Σ|αᵢ|² = 1
 ```
 
-Properties:
-- **Superposition**: State exists in multiple basis states simultaneously
-- **Normalization**: Total probability = 1 (unitary evolution)
-- **Phase**: Complex phases enable quantum interference
+*Verified by:* `test_is_normalized_rtol_parameter` in `tests/test_quantum_numerical.py`.
 
 ### Quantum Gates (Unitary Operators)
 
@@ -318,6 +299,7 @@ H = 1/√2 [[1,  1],
 
 H|0⟩ = (|0⟩ + |1⟩)/√2
 ```
+*Verified by:* `test_hadamard_numerical`.
 
 **CNOT** (creates entanglement):
 ```
@@ -328,38 +310,29 @@ CNOT = [[1, 0, 0, 0],
 
 CNOT·(H⊗I)|00⟩ = (|00⟩ + |11⟩)/√2  (Bell state)
 ```
+*Verified by:* `test_bell_state_concurrence_exact` and `test_qiskit_statevector_comparison_phi_plus`.
 
-**Pauli Gates** (rotations):
-```
-X = [[0, 1],     Y = [[0, -i],     Z = [[1,  0],
-     [1, 0]]          [i,  0]]          [0, -1]]
-```
-
-### Quantum Measurement
+### Quantum Measurement & Collapse
 
 **Born Rule**: Measurement outcome probability
 ```
 P(measuring state |i⟩) = |⟨i|ψ⟩|² = |αᵢ|²
 ```
+*Verified by:* `test_hard_collapse_ste_gradient_flow` and `test_deferred_vs_expectation_collapse_protocols`.
 
-Post-measurement state collapse:
-```
-|ψ⟩ = Σᵢ αᵢ|i⟩  →  |i_measured⟩  with probability |αᵢ|²
-```
+### Entanglement Measures & Partial Trace
 
-### Entanglement Measures
-
-**Von Neumann Entropy** (for pure states):
+**Von Neumann Entropy & Reduced State (Partial Trace)**:
 ```
-S = -Tr(ρ log ρ) = -Σᵢ pᵢ log pᵢ
+S = -Tr(ρ_A log_2 ρ_A)  where ρ_A = Tr_B(|ψ⟩⟨ψ|)
 ```
+*Verified by:* `test_partial_trace_keep_qubits`.
 
 **Concurrence** (2-qubit entanglement):
 ```
 C = 2|α₀α₃ - α₁α₂|  ∈ [0, 1]
 ```
-- C = 0: separable (no entanglement)
-- C = 1: maximally entangled (Bell state)
+*Verified by:* `test_bell_state_concurrence_exact` and `test_cross_token_entanglement_concurrence`.
 
 ### Quantum Kernel Attention
 
@@ -370,16 +343,12 @@ K(x, y) = |⟨ψ(x)|ψ(y)⟩|²
 where ψ: ℝ^d → ℂ^(2^n) embeds classical to quantum
 ```
 
-Attention weights based on quantum state overlap (interference patterns).
-
 ### Tensor Network Decomposition
 
 Matrix Product State representation:
 ```
 W = Σ A₁(i₁) A₂(i₂) ... Aₙ(iₙ)
 ```
-
-where each Aₖ has shape `(bond_dim, local_dim, bond_dim)`.
 
 Compression ratio: `d_in × d_out / (n_cores × bond_dim²)`
 
