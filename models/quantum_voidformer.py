@@ -8,7 +8,7 @@ ARCHITECTURE TRANSFORMATION:
     Classical VoidFormer: |T⟩ = α|S_c⟩ + β|S_v⟩ + γ·I(|S_c⟩,|S_v⟩)
     ↓
     Quantum VoidFormer: |ψ⟩ = Σᵢ αᵢ|i⟩ in 2^n Hilbert space
-    
+
 where quantum superposition replaces dual-state representation,
 entanglement replaces interference, and measurement replaces collapse.
 """
@@ -28,6 +28,7 @@ from ..quantum import (
     CollapseProtocol,
     QuantumKernelAttention,
     QuantumInspiredNeuralLayer,
+    VQCLayer,
 )
 from ..layers import DualEmbedding
 
@@ -44,19 +45,24 @@ class QuantumVoidFormerOutput:
 
 class QuantumVoidFormerBlock(nn.Module):
     """Single transformer block with quantum processing.
-    
+
     Replaces classical attention and FFN with quantum operations:
     1. Quantum Kernel Attention (quantum fidelity-based attention)
     2. Quantum Circuit Processing (gate operations)
     3. Quantum-Inspired FFN (tensor network or QIML layer)
     """
-    
+
     def __init__(
         self,
         d_model: int,
         n_heads: int,
         d_ff: int,
         n_qubits: int = 4,
+        n_vqc_qubits: int = 4,
+        n_vqc_layers: int = 2,
+        use_vqc_layer: bool = True,
+        vqc_backend: str = "statevector",
+        vqc_shots: int = 1024,
         dropout: float = 0.1,
         use_quantum_attention: bool = True,
         use_tensor_network_ffn: bool = False,
@@ -65,7 +71,7 @@ class QuantumVoidFormerBlock(nn.Module):
         self.d_model = d_model
         self.n_qubits = n_qubits
         self.use_quantum_attention = use_quantum_attention
-        
+
         # Quantum or classical attention
         if use_quantum_attention:
             self.attention = QuantumKernelAttention(
@@ -81,9 +87,9 @@ class QuantumVoidFormerBlock(nn.Module):
                 n_heads=n_heads,
                 dropout=dropout,
             )
-        
+
         self.norm1 = nn.LayerNorm(d_model)
-        
+
         # Quantum-inspired FFN or classical FFN
         if use_tensor_network_ffn:
             from ..quantum import TensorNetworkLayer
@@ -101,9 +107,9 @@ class QuantumVoidFormerBlock(nn.Module):
                 nn.Linear(d_ff, d_model),
                 nn.Dropout(dropout),
             )
-        
+
         self.norm2 = nn.LayerNorm(d_model)
-        
+
         # Optional: Quantum-inspired neural layer
         self.quantum_layer = QuantumInspiredNeuralLayer(
             d_model=d_model,
@@ -112,7 +118,19 @@ class QuantumVoidFormerBlock(nn.Module):
             dropout=dropout,
         )
         self.norm3 = nn.LayerNorm(d_model)
-    
+
+        # Hardware-bound VQC layer
+        self.use_vqc_layer = use_vqc_layer
+        if use_vqc_layer:
+            self.vqc_layer = VQCLayer(
+                d_model=d_model,
+                n_vqc_qubits=n_vqc_qubits,
+                n_vqc_layers=n_vqc_layers,
+                backend=vqc_backend,
+                shots=vqc_shots,
+                dropout=dropout,
+            )
+
     def forward(
         self,
         x: torch.Tensor,
@@ -122,47 +140,52 @@ class QuantumVoidFormerBlock(nn.Module):
         Args:
             x: (B, T, d_model)
             return_diagnostics: Whether to return quantum diagnostics
-        
+
         Returns:
             output: (B, T, d_model)
             diagnostics: Dict of processing statistics
         """
         diagnostics = {}
-        
+
         # 1. Quantum attention
         if self.use_quantum_attention:
             attn_out, attn_diag = self.attention(x)
             diagnostics["attention"] = attn_diag
         else:
             attn_out, _ = self.attention(x)
-        
+
         x = self.norm1(x + attn_out)
-        
+
         # 2. FFN
         ffn_out = self.ffn(x)
         x = self.norm2(x + ffn_out)
-        
+
         # 3. Quantum-inspired processing layer
         quantum_out, quantum_diag = self.quantum_layer(x)
         diagnostics["quantum_layer"] = quantum_diag
         x = self.norm3(x + quantum_out)
-        
+
+        # 4. Hardware-bound VQC layer
+        if self.use_vqc_layer:
+            x, vqc_diag = self.vqc_layer(x)
+            diagnostics["vqc_layer"] = vqc_diag
+
         return x, diagnostics
 
 
 class QuantumVoidFormer(nn.Module):
     """Quantum-Enhanced VoidFormer: Virtual Quantum Computing Simulator + LM.
-    
+
     Replaces classical transformer with quantum computing simulation:
     - Token embeddings → Quantum superposition states
     - Attention → Quantum kernel attention (fidelity-based)
     - Processing → Quantum circuits with gates and entanglement
     - Output → Measurement-based collapse to classical logits
-    
+
     The model operates primarily in quantum superposition during processing,
     only collapsing to classical outputs at the final measurement layer.
     """
-    
+
     def __init__(
         self,
         vocab_size: int,
@@ -171,6 +194,11 @@ class QuantumVoidFormer(nn.Module):
         n_heads: int = 4,
         d_ff: int = 512,
         n_qubits_per_token: int = 4,
+        n_vqc_qubits: int = 4,
+        n_vqc_layers: int = 2,
+        use_vqc_layer: bool = True,
+        vqc_backend: str = "statevector",
+        vqc_shots: int = 1024,
         max_seq_len: int = 512,
         collapse_protocol: str = "entropy_gated",
         enable_entanglement: bool = True,
@@ -187,18 +215,18 @@ class QuantumVoidFormer(nn.Module):
         self.n_qubits = n_qubits_per_token
         self.max_seq_len = max_seq_len
         self.device = device or torch.device("cpu")
-        
+
         # Token embeddings (classical → quantum via processor)
         self.embedding = nn.Embedding(vocab_size, d_model)
         self.pos_embedding = nn.Embedding(max_seq_len, d_model)
         self.embed_dropout = nn.Dropout(dropout)
-        
+
         # Virtual Quantum Processor (core quantum computing engine)
         try:
             from quantum_init import initialize_quantum_processor
         except ImportError:
             from ..quantum_init import initialize_quantum_processor
-        
+
         self.quantum_processor = initialize_quantum_processor(
             d_model=d_model,
             n_qubits_per_token=n_qubits_per_token,
@@ -208,7 +236,7 @@ class QuantumVoidFormer(nn.Module):
             device=device,
             name=f"qvf_{id(self)}",
         )
-        
+
         # Quantum-enhanced transformer blocks
         self.blocks = nn.ModuleList([
             QuantumVoidFormerBlock(
@@ -216,29 +244,34 @@ class QuantumVoidFormer(nn.Module):
                 n_heads=n_heads,
                 d_ff=d_ff,
                 n_qubits=n_qubits_per_token,
+                n_vqc_qubits=n_vqc_qubits,
+                n_vqc_layers=n_vqc_layers,
+                use_vqc_layer=use_vqc_layer,
+                vqc_backend=vqc_backend,
+                vqc_shots=vqc_shots,
                 dropout=dropout,
                 use_quantum_attention=use_quantum_attention,
                 use_tensor_network_ffn=use_tensor_network_ffn,
             )
             for _ in range(n_layers)
         ])
-        
+
         self.ln_f = nn.LayerNorm(d_model)
-        
+
         # LM head
         self.lm_head = nn.Linear(d_model, vocab_size, bias=False)
         if tie_embeddings:
             self.lm_head.weight = self.embedding.weight
-        
+
         self._init_weights()
-    
+
     def _init_weights(self):
         """Initialize weights."""
         nn.init.normal_(self.embedding.weight, std=0.02)
         nn.init.normal_(self.pos_embedding.weight, std=0.01)
         if not hasattr(self.lm_head, '_is_tied'):
             nn.init.normal_(self.lm_head.weight, std=0.02)
-    
+
     def forward(
         self,
         ids: torch.Tensor,
@@ -252,30 +285,30 @@ class QuantumVoidFormer(nn.Module):
             use_quantum_processing: Whether to use quantum processor
             quantum_algorithm: Optional specific quantum algorithm to execute
             return_diagnostics: Return detailed quantum diagnostics
-        
+
         Returns:
             QuantumVoidFormerOutput with logits and quantum information
         """
         B, T = ids.shape
         assert T <= self.max_seq_len
-        
+
         # 1. Classical token embeddings
         positions = torch.arange(T, device=ids.device).unsqueeze(0).expand(B, T)
         x = self.embedding(ids) + self.pos_embedding(positions)
         x = self.embed_dropout(x)
-        
+
         layer_diagnostics = []
-        
+
         # 2. Process through quantum-enhanced blocks
         for i, block in enumerate(self.blocks):
             x, block_diag = block(x, return_diagnostics=return_diagnostics)
             if return_diagnostics:
                 block_diag["layer_idx"] = i
                 layer_diagnostics.append(block_diag)
-        
+
         # 3. Pre-LM normalization
         x = self.ln_f(x)
-        
+
         # 4. Quantum processing pipeline (optional)
         quantum_diagnostics = {}
         if use_quantum_processing:
@@ -287,15 +320,15 @@ class QuantumVoidFormer(nn.Module):
             else:
                 # Standard quantum circuit processing
                 x_quantum, q_diag = self.quantum_processor(x)
-            
+
             quantum_diagnostics = q_diag
-            
+
             # Blend quantum and classical (hybrid mode)
             x = 0.5 * x + 0.5 * x_quantum
-        
+
         # 5. Language modeling head
         logits = self.lm_head(x)
-        
+
         return QuantumVoidFormerOutput(
             logits=logits,
             quantum_states=x,
@@ -303,7 +336,7 @@ class QuantumVoidFormer(nn.Module):
             quantum_diagnostics=quantum_diagnostics,
             layer_diagnostics=layer_diagnostics,
         )
-    
+
     @torch.no_grad()
     def generate(
         self,
@@ -314,27 +347,27 @@ class QuantumVoidFormer(nn.Module):
         use_quantum: bool = True,
     ) -> torch.Tensor:
         """Generate tokens using quantum-enhanced sampling.
-        
+
         Args:
             ids: Starting token IDs (B, T)
             max_new_tokens: Number of tokens to generate
             temperature: Sampling temperature
             top_k: Top-k filtering
             use_quantum: Use quantum processing during generation
-        
+
         Returns:
             Generated token sequences (B, T+max_new_tokens)
         """
         self.eval()
-        
+
         for _ in range(max_new_tokens):
             # Crop to max context
             ids_crop = ids[:, -self.max_seq_len:]
-            
+
             # Forward pass with quantum
             out = self.forward(ids_crop, use_quantum_processing=use_quantum)
             logits = out.logits[:, -1, :] / max(temperature, 1e-6)
-            
+
             # Apply quantum measurement uncertainty to logits (optional)
             if use_quantum and "measurement_entropy" in out.quantum_diagnostics:
                 entropy = out.quantum_diagnostics["measurement_entropy"]
@@ -344,28 +377,28 @@ class QuantumVoidFormer(nn.Module):
                     entropy_scale = entropy
                 # Higher entropy → more uncertain → flatten distribution
                 logits = logits / (1.0 + 0.1 * entropy_scale)
-            
+
             # Top-k filtering
             if top_k is not None:
                 v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
                 logits[logits < v[:, [-1]]] = float("-inf")
-            
+
             # Sample
             probs = torch.softmax(logits, dim=-1)
             next_token = torch.multinomial(probs, num_samples=1)
-            
+
             ids = torch.cat([ids, next_token], dim=1)
-        
+
         return ids
-    
+
     def num_params(self) -> int:
         """Count trainable parameters."""
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
-    
+
     def get_quantum_diagnostics(self, ids: torch.Tensor) -> dict:
         """Get detailed quantum state diagnostics without full forward pass."""
         B, T = ids.shape
         positions = torch.arange(T, device=ids.device).unsqueeze(0).expand(B, T)
         x = self.embedding(ids) + self.pos_embedding(positions)
-        
+
         return self.quantum_processor.get_quantum_state_diagnostics(x)

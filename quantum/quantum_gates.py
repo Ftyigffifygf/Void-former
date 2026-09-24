@@ -207,6 +207,83 @@ class PauliZGate(QuantumGate):
         ], dtype=dtype, device=device)
 
 
+class RXGate(QuantumGate):
+    """Parameterized Pauli-X rotation gate: RX(θ) = exp(-i θ X / 2)
+
+    RX(θ) = [[  cos(θ/2), -i sin(θ/2)],
+             [-i sin(θ/2),   cos(θ/2)]]
+    """
+
+    def __init__(self, theta: float | torch.Tensor = 0.0):
+        theta_val = theta.item() if isinstance(theta, torch.Tensor) and theta.numel() == 1 else theta
+        super().__init__(1, f"RX({theta_val:.3f})" if isinstance(theta_val, (int, float)) else "RX")
+        if isinstance(theta, torch.Tensor):
+            self.theta = theta if isinstance(theta, nn.Parameter) else nn.Parameter(theta)
+        else:
+            self.theta = nn.Parameter(torch.tensor(float(theta)))
+
+    def matrix(self, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
+        theta = self.theta.to(device=device)
+        cos = torch.cos(theta / 2.0)
+        sin = torch.sin(theta / 2.0)
+        neg_i_sin = -1j * sin
+
+        row0 = torch.stack([cos.to(dtype=dtype), neg_i_sin.to(dtype=dtype)])
+        row1 = torch.stack([neg_i_sin.to(dtype=dtype), cos.to(dtype=dtype)])
+        return torch.stack([row0, row1])
+
+
+class RYGate(QuantumGate):
+    """Parameterized Pauli-Y rotation gate: RY(θ) = exp(-i θ Y / 2)
+
+    RY(θ) = [[cos(θ/2), -sin(θ/2)],
+             [sin(θ/2),  cos(θ/2)]]
+    """
+
+    def __init__(self, theta: float | torch.Tensor = 0.0):
+        theta_val = theta.item() if isinstance(theta, torch.Tensor) and theta.numel() == 1 else theta
+        super().__init__(1, f"RY({theta_val:.3f})" if isinstance(theta_val, (int, float)) else "RY")
+        if isinstance(theta, torch.Tensor):
+            self.theta = theta if isinstance(theta, nn.Parameter) else nn.Parameter(theta)
+        else:
+            self.theta = nn.Parameter(torch.tensor(float(theta)))
+
+    def matrix(self, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
+        theta = self.theta.to(device=device)
+        cos = torch.cos(theta / 2.0)
+        sin = torch.sin(theta / 2.0)
+
+        row0 = torch.stack([cos.to(dtype=dtype), (-sin).to(dtype=dtype)])
+        row1 = torch.stack([sin.to(dtype=dtype), cos.to(dtype=dtype)])
+        return torch.stack([row0, row1])
+
+
+class RZGate(QuantumGate):
+    """Parameterized Pauli-Z rotation gate: RZ(θ) = exp(-i θ Z / 2)
+
+    RZ(θ) = [[exp(-i θ/2),           0],
+             [          0, exp(i θ/2)]]
+    """
+
+    def __init__(self, theta: float | torch.Tensor = 0.0):
+        theta_val = theta.item() if isinstance(theta, torch.Tensor) and theta.numel() == 1 else theta
+        super().__init__(1, f"RZ({theta_val:.3f})" if isinstance(theta_val, (int, float)) else "RZ")
+        if isinstance(theta, torch.Tensor):
+            self.theta = theta if isinstance(theta, nn.Parameter) else nn.Parameter(theta)
+        else:
+            self.theta = nn.Parameter(torch.tensor(float(theta)))
+
+    def matrix(self, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
+        theta = self.theta.to(device=device)
+        exp_neg = torch.exp(-1j * (theta / 2.0))
+        exp_pos = torch.exp(1j * (theta / 2.0))
+        zero = torch.tensor(0.0, dtype=dtype, device=device)
+
+        row0 = torch.stack([exp_neg.to(dtype=dtype), zero])
+        row1 = torch.stack([zero, exp_pos.to(dtype=dtype)])
+        return torch.stack([row0, row1])
+
+
 class PhaseGate(QuantumGate):
     """Parameterized phase gate: R_φ(θ) = e^(iθ)|1⟩⟨1|
 
@@ -216,9 +293,13 @@ class PhaseGate(QuantumGate):
     Applies relative phase θ to |1⟩ component.
     """
 
-    def __init__(self, theta: float = math.pi / 4):
-        super().__init__(1, f"Phase({theta:.3f})")
-        self.theta = nn.Parameter(torch.tensor(theta))
+    def __init__(self, theta: float | torch.Tensor = math.pi / 4):
+        theta_val = theta.item() if isinstance(theta, torch.Tensor) and theta.numel() == 1 else theta
+        super().__init__(1, f"Phase({theta_val:.3f})" if isinstance(theta_val, (int, float)) else "Phase")
+        if isinstance(theta, torch.Tensor):
+            self.theta = theta if isinstance(theta, nn.Parameter) else nn.Parameter(theta)
+        else:
+            self.theta = nn.Parameter(torch.tensor(float(theta)))
 
     def matrix(self, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
         phase = torch.exp(1j * self.theta.to(device=device))
@@ -359,29 +440,51 @@ class QuantumGateRegistry(nn.Module):
             ControlledPhaseGate(theta=math.pi),
         ])
 
-    def get_gate(self, name: str) -> QuantumGate:
-        """Retrieve a gate by name."""
+    def get_gate(
+        self,
+        name: str,
+        angle: Optional[float | torch.Tensor] = None,
+    ) -> QuantumGate:
+        """Retrieve or construct a gate by name."""
         if name in self.gates:
             return self.gates[name]
+
+        upper_name = name.upper()
+        if upper_name in ("RX", "RY", "RZ") or upper_name.startswith(("RX", "RY", "RZ")):
+            theta = angle if angle is not None else 0.0
+            if upper_name.startswith("RX"):
+                return RXGate(theta=theta)
+            elif upper_name.startswith("RY"):
+                return RYGate(theta=theta)
+            elif upper_name.startswith("RZ"):
+                return RZGate(theta=theta)
+
         raise KeyError(f"Gate '{name}' not found in registry")
 
     def apply_circuit(
         self,
         state: QuantumStateVector,
-        circuit: list[tuple[str, list[int]]],
+        circuit: list[tuple[str, list[int]]] | list[tuple[str, list[int], dict]],
     ) -> QuantumStateVector:
         """Apply a sequence of gates (quantum circuit) to a state.
 
         Args:
             state: Input quantum state
-            circuit: List of (gate_name, target_qubits) tuples
+            circuit: List of (gate_name, target_qubits) or (gate_name, target_qubits, params) tuples
 
         Returns:
             Final quantum state after circuit execution
         """
         current_state = state
-        for gate_name, targets in circuit:
-            gate = self.get_gate(gate_name)
+        gates = circuit.gates if hasattr(circuit, "gates") else circuit
+        for gate_item in gates:
+            if len(gate_item) == 2:
+                gate_name, targets = gate_item
+                params = {}
+            else:
+                gate_name, targets, params = gate_item
+            angle = params.get("angle", None) if isinstance(params, dict) else None
+            gate = self.get_gate(gate_name, angle=angle)
             current_state = gate.apply(current_state, targets)
         return current_state
 

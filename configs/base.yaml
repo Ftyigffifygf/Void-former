@@ -15,6 +15,12 @@ model:
   use_dynamic_router: true
   use_geodesic_tracker: true
   geodesic_rank: 32
+  n_qubits_per_token: 4
+  n_vqc_qubits: 4
+  n_vqc_layers: 2
+  use_vqc_layer: true
+  vqc_backend: statevector
+  vqc_shots: 1024
   collapse_temperature_init: 1.0
   mode: adaptive-collapse
 
