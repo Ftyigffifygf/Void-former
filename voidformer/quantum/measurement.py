@@ -8,7 +8,8 @@ Implements the measurement postulate of quantum mechanics:
 Collapse Protocols:
 1. Hard Collapse: Sample from distribution, project to basis state (with STE / Gumbel-Softmax gradient flow)
 2. Soft Collapse: Weighted mixture preserving some quantum information
-3. Deferred Collapse: Keep quantum until final output layer
+3. Deferred Collapse: Keep quantum until final output layer (direct amplitude projection without Born collapse)
+4. Expectation: Expectation value ⟨ψ|O|ψ⟩ using observable operator on Born rule probabilities
 """
 
 from __future__ import annotations
@@ -28,8 +29,8 @@ class CollapseProtocol(Enum):
     """Strategy for collapsing quantum superposition to classical state."""
     HARD = "hard"              # Full collapse to single basis state (Born rule sampling w/ STE)
     SOFT = "soft"              # Partial collapse (weighted by probabilities)
-    EXPECTATION = "expectation"  # Collapse to expectation value
-    DEFERRED = "deferred"      # No collapse (keep quantum state)
+    EXPECTATION = "expectation"  # Collapse to expectation value ⟨ψ|O|ψ⟩
+    DEFERRED = "deferred"      # Deferred collapse: direct amplitude projection without Born collapse
     ENTROPY_GATED = "entropy_gated"  # Adaptive collapse based on entropy
 
 
@@ -97,7 +98,7 @@ class MeasurementLayer(nn.Module):
 
         # Select collapse protocol
         if self.collapse_protocol == CollapseProtocol.DEFERRED:
-            classical_output, collapsed_state = self._expectation_value(quantum_state)
+            classical_output, collapsed_state = self._deferred_collapse(quantum_state)
 
         elif self.collapse_protocol == CollapseProtocol.HARD:
             classical_output, collapsed_state = self._hard_collapse(
@@ -211,6 +212,19 @@ class MeasurementLayer(nn.Module):
         Uses learned observable operator O. State remains unchanged.
         """
         classical_output = self.observable(state.probabilities)
+        return classical_output, state
+
+    def _deferred_collapse(
+        self,
+        state: QuantumStateVector,
+    ) -> tuple[torch.Tensor, QuantumStateVector]:
+        """Deferred measurement principle: bypass Born probability collapse.
+
+        Directly projects complex quantum state amplitudes to classical space without
+        collapsing quantum superposition or routing through Born probabilities.
+        State remains in exact superposition.
+        """
+        classical_output = torch.matmul(state.amplitudes.real, self.basis_projection)
         return classical_output, state
 
     def _entropy_gated_collapse(

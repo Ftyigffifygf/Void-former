@@ -164,14 +164,12 @@ class SharedCrossTokenEntangler(nn.Module):
         z_shared = z_shared / z_shared_norm
 
         # 2. Position-specific feedback from Z_shared to tokens
-        # Each position receives distinct feedback according to its position phase
         shared_back = torch.matmul(
             (z_shared.unsqueeze(1) * pos_phases.conj()),
             self.shared_to_token
         )  # (B, T, 2^n_token)
 
         # 3. Position-dependent token-pair interference (pair-specific correlation)
-        # Pairwise state interaction matrix P = softmax(|amps @ W @ amps^H|)
         pair_scores = torch.abs(torch.matmul(torch.matmul(amps, self.pairwise_kernel), amps.mH))  # (B, T, T)
         pair_weights = torch.softmax(pair_scores, dim=-1)  # (B, T, T)
         pair_interfered = torch.matmul(pair_weights.to(dtype=amps.dtype), amps)  # (B, T, 2^n_token)
@@ -237,28 +235,45 @@ class EntanglementManager(nn.Module):
         token_pairs: list[tuple[int, int]],
         entanglement_strength: float = 1.0,
     ) -> QuantumStateVector:
-        """Entangle specified pairs of tokens via CNOT gates."""
-        current_state = state
-        CNOT = self.gate_registry.get_gate("CNOT")
+        """Entangle specified pairs of token positions via inter-token controlled operations."""
+        B, T, state_dim = state.amplitudes.shape
+        token_amps = list(torch.unbind(state.amplitudes, dim=1))
 
         for (i, j) in token_pairs:
-            if i >= state.amplitudes.shape[1] or j >= state.amplitudes.shape[1]:
+            if i >= T or j >= T or i == j:
                 continue
 
-            token_mask = torch.zeros(
-                state.amplitudes.shape[0],
-                state.amplitudes.shape[1],
-                device=self.device,
-            )
-            token_mask[:, [i, j]] = entanglement_strength
+            a_i = token_amps[i]
+            a_j = token_amps[j]
 
-            current_state = CNOT.apply(
-                current_state,
-                target_qubits=[0, 1],
-                token_indices=token_mask,
-            )
+            half_dim = state_dim // 2
 
-        return current_state
+            # Split token i into control-0 and control-1 components
+            a_i_split = a_i.view(B, 2, half_dim)
+            ctrl_weight = (a_i_split[:, 1, :].abs() ** 2).sum(dim=-1, keepdim=True)
+
+            # Target token j: swap qubit 0 components
+            a_j_split = a_j.view(B, 2, half_dim)
+            a_j_flipped = torch.stack([a_j_split[:, 1, :], a_j_split[:, 0, :]], dim=1).view(B, state_dim)
+
+            s = entanglement_strength
+            a_j_entangled = (1.0 - s * ctrl_weight) * a_j + (s * ctrl_weight) * a_j_flipped
+
+            phase_factor = torch.exp(1j * torch.tensor(math.pi / 4 * s, device=state.amplitudes.device))
+            a_i_entangled = a_i * (1.0 - ctrl_weight + ctrl_weight * phase_factor)
+
+            token_amps[i] = a_i_entangled
+            token_amps[j] = a_j_entangled
+
+        current_amps = torch.stack(token_amps, dim=1)
+
+        new_state = QuantumStateVector(
+            amplitudes=current_amps,
+            n_qubits=state.n_qubits,
+            global_phase=state.global_phase,
+        ).normalize()
+
+        return new_state
 
     def create_ghz_state(
         self,
