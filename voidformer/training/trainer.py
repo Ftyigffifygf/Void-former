@@ -11,9 +11,9 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from ..models import VoidFormerModel
-from ..utils.logging import get_logger
-from .losses import VoidFormerLosses
+from voidformer.models import VoidFormerModel
+from voidformer.utils.logging import get_logger
+from voidformer.training.losses import VoidFormerLosses
 
 
 class Trainer:
@@ -41,7 +41,7 @@ class Trainer:
         self.grad_clip = t.get("grad_clip", 1.0)
         self.log_every = t.get("log_every", 50)
         self.amp = bool(t.get("amp", False)) and self.device.type == "cuda"
-        self.scaler = torch.cuda.amp.GradScaler(enabled=self.amp)
+        self.scaler = torch.amp.GradScaler('cuda', enabled=self.amp)
         self.log = get_logger("voidformer.train")
 
         self.tb = None
@@ -88,7 +88,7 @@ class Trainer:
                 g["lr"] = self._lr_at(step)
 
             self.optim.zero_grad(set_to_none=True)
-            with torch.cuda.amp.autocast(enabled=self.amp):
+            with torch.amp.autocast('cuda' if self.device.type == "cuda" else 'cpu', enabled=self.amp):
                 out = self.model(ids, return_diagnostics=True)
                 loss, log = self.loss_fn(out, tgt, emb_w)
 

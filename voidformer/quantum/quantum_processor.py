@@ -514,7 +514,7 @@ class VirtualQuantumProcessor(nn.Module):
             "entropy": quantum_state.measure_entropy().mean().item(),
             "max_probability": quantum_state.probabilities.max(dim=-1).values.mean().item(),
             "state_dimension": self.state_dim,
-            "is_normalized": quantum_state.is_normalized,
+            "is_normalized": quantum_state.is_normalized(),
             "global_phase": quantum_state.global_phase,
         }
 

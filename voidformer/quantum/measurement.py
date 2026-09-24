@@ -97,7 +97,7 @@ class MeasurementLayer(nn.Module):
 
         # Select collapse protocol
         if self.collapse_protocol == CollapseProtocol.DEFERRED:
-            classical_output, collapsed_state = self._expectation_value(quantum_state)
+            classical_output, collapsed_state = self._deferred_collapse(quantum_state)
 
         elif self.collapse_protocol == CollapseProtocol.HARD:
             classical_output, collapsed_state = self._hard_collapse(
@@ -201,6 +201,18 @@ class MeasurementLayer(nn.Module):
         ).normalize()
 
         return classical_output, collapsed_state
+
+    def _deferred_collapse(
+        self,
+        state: QuantumStateVector,
+    ) -> tuple[torch.Tensor, QuantumStateVector]:
+        """Deferred collapse: keep quantum state uncollapsed for chained operations.
+
+        Outputs classical basis projections without measurement back-action or
+        altering state amplitudes.
+        """
+        classical_output = torch.matmul(state.probabilities, self.basis_projection)
+        return classical_output, state
 
     def _expectation_value(
         self,
