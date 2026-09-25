@@ -32,6 +32,63 @@ from quantum import (
 )
 
 
+def test_rotation_gates_numerical():
+    """Verify RX, RY, RZ gate matrix unitarity and state rotation."""
+    from quantum import RXGate, RYGate, RZGate, QuantumCircuit, BackendIntegration
+
+    for gate_cls in (RXGate, RYGate, RZGate):
+        gate = gate_cls(theta=math.pi / 3)
+        assert gate.verify_unitary()
+
+    # Verify RZ(pi) on |0> gives e^(-i pi/2) |0>
+    amps = torch.tensor([[[1.0 + 0j, 0.0 + 0j]]], dtype=torch.complex64)
+    state = QuantumStateVector(amplitudes=amps, n_qubits=1)
+    rz = RZGate(theta=math.pi)
+    out_state = rz.apply(state, target_qubits=[0])
+    expected = torch.tensor([[[-1j, 0j]]], dtype=torch.complex64)
+    assert torch.allclose(out_state.amplitudes, expected, atol=1e-5)
+
+    # Test IBM Quantum service authentication error handling when no token provided
+    with pytest.raises((RuntimeError, ValueError, Exception)):
+        BackendIntegration.get_ibm_service(token="invalid_test_token_123")
+
+    # Test batch execution on Aer simulator
+    qc1 = QuantumCircuit(name="batch_c1", n_qubits=2)
+    qc1.add_rotation(0, "X", math.pi)
+    qc2 = QuantumCircuit(name="batch_c2", n_qubits=2)
+    qc2.add_rotation(1, "X", math.pi)
+    batch_counts = BackendIntegration.execute_batch_on_aer([qc1, qc2], shots=100)
+    assert len(batch_counts) == 2
+
+    # Test poll_job mock handling
+    class MockDoneJob:
+        def status(self): return "DONE"
+        def result(self): return {"0": 100}
+
+    class MockErrorJob:
+        def status(self): return "ERROR"
+
+    class MockTimeoutJob:
+        def status(self): return "RUNNING"
+        def cancel(self): pass
+
+    assert BackendIntegration.poll_job(MockDoneJob(), timeout_seconds=1.0) == {"0": 100}
+
+    with pytest.raises(RuntimeError):
+        BackendIntegration.poll_job(MockErrorJob(), timeout_seconds=1.0)
+
+    with pytest.raises(TimeoutError):
+        BackendIntegration.poll_job(MockTimeoutJob(), timeout_seconds=0.1, poll_interval=0.05)
+
+    # Test circuit conversion to Qiskit with RX, RY, RZ
+    qc = QuantumCircuit(name="rot_test", n_qubits=2)
+    qc.add_rotation(0, "X", math.pi / 2)
+    qc.add_rotation(1, "Y", math.pi / 4)
+    qc.add_rotation(0, "Z", math.pi / 3)
+    qiskit_qc = BackendIntegration.to_qiskit_circuit(qc)
+    assert len(qiskit_qc.data) == 3
+
+
 def test_hadamard_numerical():
     """Hadamard on |0> -> (|0> + |1>) / sqrt(2)."""
     amps = torch.tensor([[[1.0 + 0j, 0.0 + 0j]]], dtype=torch.complex64)
