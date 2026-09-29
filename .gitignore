@@ -1,2 +1,3 @@
 __pycache__/
 voidformer.egg-info/
+*.jsonl
