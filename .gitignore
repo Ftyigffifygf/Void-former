@@ -1,2 +1,4 @@
-__pycache__/
+ m
+ voidformer.egg-info/
+*.jsonl
 venv

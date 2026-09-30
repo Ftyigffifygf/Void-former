@@ -61,9 +61,10 @@ def run_ablations():
     targets = torch.randint(0, vocab_size, (batch_size, seq_len))
     criterion = nn.CrossEntropyLoss()
 
+    # Classical model width scaled to ~1.0M parameters to match Quantum VoidFormer capacity
     models = {
-        "1. Classical Baseline": VoidFormerModel(
-            vocab_size=vocab_size, d_model=d_model, d_void=d_model, n_layers=2, n_heads=2
+        "1. Classical Baseline (Matched)": VoidFormerModel(
+            vocab_size=vocab_size, d_model=96, d_void=96, d_ff=384, n_layers=2, n_heads=2
         ),
         "2. Quantum (No Entanglement)": QuantumVoidFormer(
             vocab_size=vocab_size, d_model=d_model, n_layers=2, n_heads=2, enable_entanglement=False
