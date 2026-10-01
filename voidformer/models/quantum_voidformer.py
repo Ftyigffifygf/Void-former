@@ -120,11 +120,12 @@ class QuantumVoidFormerBlock(nn.Module):
 
         # Quantum Superposition Reasoning Engine (QSRE)
         if use_superposition_thinking:
-            self.superposition_engine = QuantumSuperpositionReasoningEngine(
+            self.qsre = QuantumSuperpositionReasoningEngine(
                 d_model=d_model,
                 n_vqc_qubits=n_vqc_qubits,
                 thinking_steps=thinking_steps,
             )
+            self.superposition_engine = self.qsre
 
     def forward(
         self,
@@ -141,6 +142,11 @@ class QuantumVoidFormerBlock(nn.Module):
             diagnostics: Dict of processing statistics
         """
         diagnostics = {}
+
+        # 0. Quantum Superposition Reasoning Engine (QSRE - prior to attention/FFN)
+        if self.use_superposition_thinking and hasattr(self, "qsre"):
+            x = self.qsre(x)
+            diagnostics["superposition_thinking"] = True
 
         # 1. Quantum attention
         if self.use_quantum_attention:
@@ -159,11 +165,6 @@ class QuantumVoidFormerBlock(nn.Module):
         quantum_out, quantum_diag = self.quantum_layer(x)
         diagnostics["quantum_layer"] = quantum_diag
         x = self.norm3(x + quantum_out)
-
-        # 4. Quantum Superposition Reasoning Engine (QSRE)
-        if self.use_superposition_thinking:
-            x = self.superposition_engine(x)
-            diagnostics["superposition_thinking"] = True
 
         return x, diagnostics
 
