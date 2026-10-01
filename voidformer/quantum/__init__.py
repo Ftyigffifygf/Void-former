@@ -35,6 +35,13 @@ from .temporal_coherence import (
     TimeAwareQuantumProcessor,
     create_time_aware_processor,
 )
+from .superposition_thinking import (
+    QuantumHilbertMemory,
+    UnitaryThinkingLoop,
+    QuantumAmplitudeOracle,
+    SuperposedBornDecoder,
+    QuantumSuperpositionReasoningEngine,
+)
 
 __all__ = [
     "QubitStateManager",
@@ -66,4 +73,9 @@ __all__ = [
     "DecoherenceMetrics",
     "TimeAwareQuantumProcessor",
     "create_time_aware_processor",
+    "QuantumHilbertMemory",
+    "UnitaryThinkingLoop",
+    "QuantumAmplitudeOracle",
+    "SuperposedBornDecoder",
+    "QuantumSuperpositionReasoningEngine",
 ]

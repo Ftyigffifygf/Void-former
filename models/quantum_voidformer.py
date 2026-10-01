@@ -29,6 +29,7 @@ from ..quantum import (
     QuantumKernelAttention,
     QuantumInspiredNeuralLayer,
     VQCLayer,
+    QuantumSuperpositionReasoningEngine,
 )
 from ..layers import DualEmbedding
 
@@ -66,11 +67,14 @@ class QuantumVoidFormerBlock(nn.Module):
         dropout: float = 0.1,
         use_quantum_attention: bool = True,
         use_tensor_network_ffn: bool = False,
+        use_superposition_thinking: bool = True,
+        thinking_steps: int = 4,
     ):
         super().__init__()
         self.d_model = d_model
         self.n_qubits = n_qubits
         self.use_quantum_attention = use_quantum_attention
+        self.use_superposition_thinking = use_superposition_thinking
 
         # Quantum or classical attention
         if use_quantum_attention:
@@ -131,6 +135,14 @@ class QuantumVoidFormerBlock(nn.Module):
                 dropout=dropout,
             )
 
+        # Quantum Superposition Reasoning Engine (QSRE)
+        if use_superposition_thinking:
+            self.superposition_engine = QuantumSuperpositionReasoningEngine(
+                d_model=d_model,
+                n_vqc_qubits=n_vqc_qubits,
+                thinking_steps=thinking_steps,
+            )
+
     def forward(
         self,
         x: torch.Tensor,
@@ -170,6 +182,11 @@ class QuantumVoidFormerBlock(nn.Module):
             x, vqc_diag = self.vqc_layer(x)
             diagnostics["vqc_layer"] = vqc_diag
 
+        # 5. Quantum Superposition Reasoning Engine (QSRE)
+        if self.use_superposition_thinking:
+            x = self.superposition_engine(x)
+            diagnostics["superposition_thinking"] = True
+
         return x, diagnostics
 
 
@@ -204,6 +221,8 @@ class QuantumVoidFormer(nn.Module):
         enable_entanglement: bool = True,
         use_quantum_attention: bool = True,
         use_tensor_network_ffn: bool = False,
+        use_superposition_thinking: bool = True,
+        thinking_steps: int = 4,
         dropout: float = 0.1,
         tie_embeddings: bool = True,
         device: Optional[torch.device] = None,
@@ -252,6 +271,8 @@ class QuantumVoidFormer(nn.Module):
                 dropout=dropout,
                 use_quantum_attention=use_quantum_attention,
                 use_tensor_network_ffn=use_tensor_network_ffn,
+                use_superposition_thinking=use_superposition_thinking,
+                thinking_steps=thinking_steps,
             )
             for _ in range(n_layers)
         ])
