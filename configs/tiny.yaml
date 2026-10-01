@@ -24,6 +24,10 @@ model:
   vqc_shots: 1024
   use_superposition_thinking: true
   thinking_steps: 4
+  use_quantum_moe: true
+  num_experts: 4
+  top_k_experts: 2
+  use_quantum_token_embedder: true
   collapse_temperature_init: 1.0
   mode: adaptive-collapse  # deterministic | probabilistic | interference-heavy | adaptive-collapse | latent-memory
 
