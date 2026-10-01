@@ -46,6 +46,7 @@ python -m voidformer.test_quantum_simple
 
 | Component | Description | Status |
 |-----------|-------------|--------|
+| 🧠 **QSRE Engine** | Quantum Superposition Reasoning Engine (Hilbert latent thinking) | ✅ |
 | 🧮 **Qubit State Manager** | Complex state vectors in 2^n Hilbert space | ✅ |
 | 🚪 **Quantum Gates** | H, X, Y, Z, CNOT, Toffoli, Phase, T | ✅ |
 | 🔗 **Entanglement** | Bell states, GHZ, learned patterns | ✅ |
@@ -91,6 +92,15 @@ python -m voidformer.test_quantum_simple
         ╚═══════════════════════════════════╝
                     │
         ╔═══════════════════════════════════╗
+        ║  QUANTUM SUPERPOSITION REASONING  ║
+        ║  ENGINE (QSRE - Hilbert Thinking) ║
+        ║  • QuantumHilbertMemory          ║
+        ║  • UnitaryThinkingLoop U(θ)       ║
+        ║  • QuantumAmplitudeOracle         ║
+        ║  • SuperposedBornDecoder          ║
+        ╚═══════════════════════════════════╝
+                    │
+        ╔═══════════════════════════════════╗
         ║  QUANTUM KERNEL ATTENTION         ║
         ║  Fidelity: K(x,y) = |⟨ψ(x)|ψ(y)⟩|²║
         ╚═══════════════════════════════════╝
@@ -122,6 +132,7 @@ voidformer/
 │   ├── measurement.py         #   Born rule collapse, protocols
 │   ├── quantum_processor.py   #   Virtual quantum CPU, circuit execution
 │   ├── qiml.py               #   Quantum-inspired ML (tensor networks, QKA)
+│   ├── superposition_thinking.py # 🆕 QUANTUM SUPERPOSITION REASONING ENGINE (QSRE)
 │   └── __init__.py
 ├── quantum_init.py            # 🆕 QUANTUM PROCESSOR REGISTRY & ENTRY POINT
 ├── models/
@@ -191,6 +202,7 @@ print(f'Entanglement: {diagnostics.get(\"is_entangled\", False)}')
 
 | Feature | Description | Status |
 |---------|-------------|--------|
+| **QSRE Reasoning Engine** | Hilbert-space parallel latent reasoning ($O(1)$ token cost) | ✅ Implemented |
 | **Qubit State Manager** | Complex state vectors `|ψ⟩` in 2^n Hilbert space | ✅ Implemented |
 | **Quantum Gates** | H, X, Y, Z, CNOT, Toffoli, Phase, T | ✅ Implemented |
 | **Entanglement** | Bell states, GHZ states, learned entanglement patterns | ✅ Implemented |
@@ -203,6 +215,47 @@ print(f'Entanglement: {diagnostics.get(\"is_entangled\", False)}')
 | **⏰ Virtual Quantum Clock** | Temporal coherence enforcement | ✅ Implemented |
 | **📉 Decoherence Simulation** | 5 physical models (exponential, gaussian, etc.) | ✅ Implemented |
 | **⚡ Forced Collapse** | Automatic measurement at deadline | ✅ Implemented |
+
+## Quantum Superposition Reasoning Engine (QSRE)
+
+The **Quantum Superposition Reasoning Engine (QSRE)** is a Hilbert-space latent reasoning framework integrated into **VoidFormer**.
+
+Traditional classical reasoning (like Chain-of-Thought) requires generating hundreds of intermediate text tokens sequentially ($O(N)$ token cost). **QSRE replaces classical token-by-token text generation with parallel state evolution in $2^n$-dimensional Hilbert space**.
+
+$$\vert \Psi_{\text{prompt}} \rangle \xrightarrow{\quad \text{Unitary Evolution } U(\theta) \quad} \vert \Psi_{\text{thinking}}^{(k)} \rangle \xrightarrow{\quad \text{Constructive Interference} \quad} \vert \Psi_{\text{solution}} \rangle \xrightarrow{\quad \text{Born Measurement} \quad} \text{Chat Tokens}$$
+
+### Core Modular Components (`quantum/superposition_thinking.py`)
+
+1. **`QuantumHilbertMemory`**: Maps input token embeddings into a complex amplitude state vector $|\Psi_0\rangle = \sum_{i=0}^{2^n-1} \alpha_i |i\rangle$ where $\sum |\alpha_i|^2 = 1$. Stores structural contextual relationships in quantum state phases.
+2. **`UnitaryThinkingLoop`**: Executes $K$ latent thinking cycles using parameterized phase rotations $R_X(\theta), R_Y(\theta), R_Z(\theta)$ with zero classical token generation cost.
+3. **`QuantumAmplitudeOracle`**: Latent quality filter that shifts phase and amplifies valid reasoning trajectories via constructive wave interference while suppressing flawed paths.
+4. **`SuperposedBornDecoder`**: Applies Born-rule collapse $P(i) = |\alpha_i|^2$ to project the high-density quantum state back into classical embedding space for output text generation.
+
+### Example Usage
+
+```python
+import torch
+from voidformer.quantum.superposition_thinking import QuantumSuperpositionReasoningEngine
+from voidformer.models import QuantumVoidFormer
+
+# Initialize QSRE standalone
+qsre = QuantumSuperpositionReasoningEngine(
+    d_model=256,
+    n_vqc_qubits=8,
+    thinking_steps=4
+)
+x = torch.randn(2, 16, 256, requires_grad=True)
+thought_enhanced_x = qsre(x)
+
+# Instantiate QuantumVoidFormer with QSRE enabled
+model = QuantumVoidFormer(
+    vocab_size=50257,
+    d_model=256,
+    n_vqc_qubits=8,
+    use_superposition_thinking=True,
+    thinking_steps=4
+)
+```
 
 ## Temporal Coherence System
 
