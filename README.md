@@ -47,6 +47,8 @@ python -m voidformer.test_quantum_simple
 | Component | Description | Status |
 |-----------|-------------|--------|
 | 🧠 **QSRE Engine** | Quantum Superposition Reasoning Engine (Hilbert latent thinking) | ✅ |
+| 🔀 **Quantum MoE** | Quantum Superposition Mixture of Experts with fidelity routing | ✅ |
+| 🔤 **Quantum Tokenizer** | Quantum Superposition Token Embedder in Hilbert space | ✅ |
 | 🧮 **Qubit State Manager** | Complex state vectors in 2^n Hilbert space | ✅ |
 | 🚪 **Quantum Gates** | H, X, Y, Z, CNOT, Toffoli, Phase, T | ✅ |
 | 🔗 **Entanglement** | Bell states, GHZ, learned patterns | ✅ |
@@ -133,6 +135,7 @@ voidformer/
 │   ├── quantum_processor.py   #   Virtual quantum CPU, circuit execution
 │   ├── qiml.py               #   Quantum-inspired ML (tensor networks, QKA)
 │   ├── superposition_thinking.py # 🆕 QUANTUM SUPERPOSITION REASONING ENGINE (QSRE)
+│   ├── superposition_moe.py   # 🆕 QUANTUM SUPERPOSITION MOE & TOKEN EMBEDDER
 │   └── __init__.py
 ├── quantum_init.py            # 🆕 QUANTUM PROCESSOR REGISTRY & ENTRY POINT
 ├── models/
@@ -215,6 +218,34 @@ print(f'Entanglement: {diagnostics.get(\"is_entangled\", False)}')
 | **⏰ Virtual Quantum Clock** | Temporal coherence enforcement | ✅ Implemented |
 | **📉 Decoherence Simulation** | 5 physical models (exponential, gaussian, etc.) | ✅ Implemented |
 | **⚡ Forced Collapse** | Automatic measurement at deadline | ✅ Implemented |
+
+## Quantum Superposition MoE & Quantum Tokenization
+
+Inspired by Argon-style quantum state architectures, VoidFormer supports **Quantum Superposition Tokenization** and **Quantum Superposition Mixture of Experts (MoE)**:
+
+- **`QuantumSuperpositionTokenEmbedder`**: Converts discrete token IDs directly into complex amplitude distributions $\vert \psi_{\text{token}} \rangle = \sum \alpha_i \vert i \rangle \in \mathbb{C}^{2^n}$ in Hilbert space.
+- **`QuantumSuperpositionRouter`**: Routes quantum states to experts based on quantum state fidelity overlap $K(x, e_j) = \vert \langle \psi(x) \vert \psi(e_j) \rangle \vert^2$.
+- **`QuantumSuperpositionMoE`**: Decomposes complex reasoning tasks into parallel sub-tasks across multiple Quantum Experts operating in Hilbert space with minimal token usage.
+
+```python
+from voidformer.quantum.superposition_moe import (
+    QuantumSuperpositionTokenEmbedder,
+    QuantumSuperpositionMoE,
+)
+from voidformer.models import QuantumVoidFormer
+
+model = QuantumVoidFormer(
+    vocab_size=50257,
+    d_model=256,
+    n_vqc_qubits=8,
+    use_superposition_thinking=True,
+    thinking_steps=4,
+    use_quantum_moe=True,
+    num_experts=4,
+    top_k_experts=2,
+    use_quantum_token_embedder=True,
+)
+```
 
 ## Quantum Superposition Reasoning Engine (QSRE)
 

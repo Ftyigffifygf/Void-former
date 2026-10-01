@@ -47,6 +47,12 @@ from .superposition_thinking import (
     SuperposedBornDecoder,
     QuantumSuperpositionReasoningEngine,
 )
+from .superposition_moe import (
+    QuantumSuperpositionTokenEmbedder,
+    QuantumSuperpositionExpert,
+    QuantumSuperpositionRouter,
+    QuantumSuperpositionMoE,
+)
 
 __all__ = [
     "QubitStateManager",
@@ -91,4 +97,8 @@ __all__ = [
     "QuantumAmplitudeOracle",
     "SuperposedBornDecoder",
     "QuantumSuperpositionReasoningEngine",
+    "QuantumSuperpositionTokenEmbedder",
+    "QuantumSuperpositionExpert",
+    "QuantumSuperpositionRouter",
+    "QuantumSuperpositionMoE",
 ]

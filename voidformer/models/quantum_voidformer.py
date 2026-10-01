@@ -29,6 +29,8 @@ from ..quantum import (
     QuantumKernelAttention,
     QuantumInspiredNeuralLayer,
     QuantumSuperpositionReasoningEngine,
+    QuantumSuperpositionTokenEmbedder,
+    QuantumSuperpositionMoE,
 )
 from ..layers import DualEmbedding
 
@@ -64,12 +66,16 @@ class QuantumVoidFormerBlock(nn.Module):
         use_tensor_network_ffn: bool = False,
         use_superposition_thinking: bool = True,
         thinking_steps: int = 4,
+        use_quantum_moe: bool = False,
+        num_experts: int = 4,
+        top_k_experts: int = 2,
     ):
         super().__init__()
         self.d_model = d_model
         self.n_qubits = n_qubits
         self.use_quantum_attention = use_quantum_attention
         self.use_superposition_thinking = use_superposition_thinking
+        self.use_quantum_moe = use_quantum_moe
 
         # Quantum or classical attention
         if use_quantum_attention:
@@ -127,6 +133,16 @@ class QuantumVoidFormerBlock(nn.Module):
             )
             self.superposition_engine = self.qsre
 
+        # Quantum Superposition Mixture of Experts (MoE)
+        if use_quantum_moe:
+            self.quantum_moe = QuantumSuperpositionMoE(
+                d_model=d_model,
+                n_vqc_qubits=n_vqc_qubits,
+                num_experts=num_experts,
+                top_k_experts=top_k_experts,
+                thinking_steps=thinking_steps,
+            )
+
     def forward(
         self,
         x: torch.Tensor,
@@ -166,6 +182,11 @@ class QuantumVoidFormerBlock(nn.Module):
         diagnostics["quantum_layer"] = quantum_diag
         x = self.norm3(x + quantum_out)
 
+        # 4. Quantum Superposition Mixture of Experts
+        if self.use_quantum_moe:
+            x = self.quantum_moe(x)
+            diagnostics["quantum_moe"] = True
+
         return x, diagnostics
 
 
@@ -198,6 +219,10 @@ class QuantumVoidFormer(nn.Module):
         use_tensor_network_ffn: bool = False,
         use_superposition_thinking: bool = True,
         thinking_steps: int = 4,
+        use_quantum_moe: bool = False,
+        num_experts: int = 4,
+        top_k_experts: int = 2,
+        use_quantum_token_embedder: bool = False,
         dropout: float = 0.1,
         tie_embeddings: bool = True,
         device: Optional[torch.device] = None,
@@ -209,8 +234,15 @@ class QuantumVoidFormer(nn.Module):
         self.n_qubits = n_qubits_per_token
         self.max_seq_len = max_seq_len
         self.device = device or torch.device("cpu")
+        self.use_quantum_token_embedder = use_quantum_token_embedder
 
         # Token embeddings (classical → quantum via processor)
+        if use_quantum_token_embedder:
+            self.quantum_token_embedder = QuantumSuperpositionTokenEmbedder(
+                vocab_size=vocab_size,
+                d_model=d_model,
+                n_vqc_qubits=n_vqc_qubits,
+            )
         self.embedding = nn.Embedding(vocab_size, d_model)
         self.pos_embedding = nn.Embedding(max_seq_len, d_model)
         self.embed_dropout = nn.Dropout(dropout)
@@ -244,6 +276,9 @@ class QuantumVoidFormer(nn.Module):
                 use_tensor_network_ffn=use_tensor_network_ffn,
                 use_superposition_thinking=use_superposition_thinking,
                 thinking_steps=thinking_steps,
+                use_quantum_moe=use_quantum_moe,
+                num_experts=num_experts,
+                top_k_experts=top_k_experts,
             )
             for _ in range(n_layers)
         ])
@@ -284,9 +319,13 @@ class QuantumVoidFormer(nn.Module):
         B, T = ids.shape
         assert T <= self.max_seq_len
 
-        # 1. Classical token embeddings
+        # 1. Classical or Quantum Token Embeddings
         positions = torch.arange(T, device=ids.device).unsqueeze(0).expand(B, T)
-        x = self.embedding(ids) + self.pos_embedding(positions)
+        if self.use_quantum_token_embedder and hasattr(self, "quantum_token_embedder"):
+            x_quantum_emb, _ = self.quantum_token_embedder(ids)
+            x = x_quantum_emb + self.pos_embedding(positions)
+        else:
+            x = self.embedding(ids) + self.pos_embedding(positions)
         x = self.embed_dropout(x)
 
         layer_diagnostics = []

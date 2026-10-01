@@ -49,6 +49,13 @@ def create_model(
         ).to(dev)
 
     elif model_type == "quantum":
+        use_superposition_thinking = kwargs.get("use_superposition_thinking", True)
+        thinking_steps = kwargs.get("thinking_steps", 4)
+        use_quantum_moe = kwargs.get("use_quantum_moe", False)
+        num_experts = kwargs.get("num_experts", 4)
+        top_k_experts = kwargs.get("top_k_experts", 2)
+        use_quantum_token_embedder = kwargs.get("use_quantum_token_embedder", False)
+
         return QuantumVoidFormer(
             vocab_size=vocab_size,
             d_model=d_model,
@@ -60,6 +67,12 @@ def create_model(
             collapse_protocol=collapse_protocol,
             enable_entanglement=enable_entanglement,
             use_tensor_network_ffn=use_tensor_network_ffn,
+            use_superposition_thinking=use_superposition_thinking,
+            thinking_steps=thinking_steps,
+            use_quantum_moe=use_quantum_moe,
+            num_experts=num_experts,
+            top_k_experts=top_k_experts,
+            use_quantum_token_embedder=use_quantum_token_embedder,
             device=dev,
         ).to(dev)
 
