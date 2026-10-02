@@ -51,6 +51,7 @@ python -m voidformer.test_quantum_simple
 | 🔤 **Quantum Tokenizer** | Quantum Superposition Token Embedder in Hilbert space | ✅ |
 | 🤖 **Autonomous Engine** | Multi-trajectory $N=2^n$ simulation with amplitude amplification | ✅ |
 | 🛠️ **Custom Harness** | Universal Argon-inspired customizable task harness | ✅ |
+| 💻 **Hardware Auto-Tuner**| Dynamic host CPU/RAM/CUDA memory auto-tuning | ✅ |
 | 🔌 **AI Plugin Bridge** | Universal Quantum Plugin to wrap any AI/LLM model | ✅ |
 | 🔒 **Personal Space Vault**| Non-invertible quantum phase data protection & encryption | ✅ |
 | 🧮 **Qubit State Manager** | Complex state vectors in 2^n Hilbert space | ✅ |
@@ -142,6 +143,7 @@ voidformer/
 │   ├── superposition_moe.py   # 🆕 QUANTUM SUPERPOSITION MOE & TOKEN EMBEDDER
 │   ├── plugin_bridge.py       # 🆕 UNIVERSAL AI PLUGIN & PERSONAL SPACE VAULT
 │   ├── autonomous_decision.py # 🆕 AUTONOMOUS DECISION ENGINE & ARGON HARNESS
+│   ├── hardware_tuner.py      # 🆕 HOST HARDWARE RESOURCE AUTO-TUNER
 │   └── __init__.py
 ├── quantum_init.py            # 🆕 QUANTUM PROCESSOR REGISTRY & ENTRY POINT
 ├── models/
@@ -224,6 +226,21 @@ print(f'Entanglement: {diagnostics.get(\"is_entangled\", False)}')
 | **⏰ Virtual Quantum Clock** | Temporal coherence enforcement | ✅ Implemented |
 | **📉 Decoherence Simulation** | 5 physical models (exponential, gaussian, etc.) | ✅ Implemented |
 | **⚡ Forced Collapse** | Automatic measurement at deadline | ✅ Implemented |
+
+## Host Hardware Resource Auto-Tuning
+
+The **`QuantumHardwareResourceTuner`** dynamically inspects host system specifications (CPU cores, available RAM, CUDA/GPU VRAM) and automatically configures optimal PyTorch thread allocations, statevector memory budgets, and safe maximum qubit simulation limits:
+
+```python
+from voidformer.harness import QuantumEngineeringBridge
+
+bridge = QuantumEngineeringBridge(backend_type="auto")
+config = bridge.auto_tune_hardware_resources()
+
+print(f"Host Device: {config['selected_device']}")
+print(f"Optimal Threads: {config['optimal_num_threads']}")
+print(f"Max Safe Simulated Qubits: {config['max_safe_simulated_qubits']}")
+```
 
 ## Autonomous Decision Simulation Engine & Customizable Argon Harness
 

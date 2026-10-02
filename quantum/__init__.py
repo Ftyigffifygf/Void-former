@@ -61,6 +61,7 @@ from .autonomous_decision import (
     QuantumAutonomousDecisionEngine,
     CustomizableQuantumHarness,
 )
+from .hardware_tuner import QuantumHardwareResourceTuner
 
 __all__ = [
     "QubitStateManager",
@@ -113,4 +114,5 @@ __all__ = [
     "QuantumVoidFormerAIPlugin",
     "QuantumAutonomousDecisionEngine",
     "CustomizableQuantumHarness",
+    "QuantumHardwareResourceTuner",
 ]
