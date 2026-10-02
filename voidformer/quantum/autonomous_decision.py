@@ -47,11 +47,11 @@ class QuantumAutonomousDecisionEngine(nn.Module):
         self.hilbert_memory = QuantumHilbertMemory(d_model, n_vqc_qubits)
         self.thinking_loop = UnitaryThinkingLoop(n_vqc_qubits, thinking_steps=num_simulations)
 
-        # Autonomous Oracle Scoring Evaluator
+        # Autonomous Oracle Scoring Evaluator per basis state
         self.trajectory_evaluator = nn.Sequential(
             nn.Linear(self.hilbert_dim, self.hilbert_dim),
             nn.GELU(),
-            nn.Linear(self.hilbert_dim, 1),
+            nn.Linear(self.hilbert_dim, self.hilbert_dim),
             nn.Sigmoid(),
         )
 
@@ -83,17 +83,17 @@ class QuantumAutonomousDecisionEngine(nn.Module):
             # 1. Quantum Unitary State Evolution across parallel trajectories
             psi = self.thinking_loop(psi, step=iter_idx % self.num_simulations)
 
-            # 2. Evaluate state trajectory qualities
+            # 2. Evaluate state trajectory qualities for each basis state
             probs = torch.abs(psi) ** 2  # [B, T, hilbert_dim]
             if custom_evaluator_fn is not None:
                 quality = custom_evaluator_fn(probs)
             else:
-                quality = self.trajectory_evaluator(probs)  # [B, T, 1]
+                quality = self.trajectory_evaluator(probs)  # [B, T, hilbert_dim]
 
             trajectory_scores_history.append(quality.mean().item())
 
-            # 3. Grover Phase Inversion / Oracle Reflection
-            oracle_phase = torch.exp(1j * (math.pi * quality))
+            # 3. Basis-state dependent Grover Phase Inversion / Oracle Reflection
+            oracle_phase = torch.exp(1j * (math.pi * quality))  # [B, T, hilbert_dim]
             psi = psi * oracle_phase
 
             # 4. Constructive Wave Interference Amplification

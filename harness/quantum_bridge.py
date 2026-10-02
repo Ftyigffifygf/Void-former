@@ -8,9 +8,11 @@ import torch
 try:
     from quantum.backend_integration import BackendIntegration
     from quantum.plugin_bridge import QuantumVoidFormerAIPlugin
+    from quantum.hardware_tuner import QuantumHardwareResourceTuner
 except ImportError:
     from voidformer.quantum.backend_integration import BackendIntegration
     from voidformer.quantum.plugin_bridge import QuantumVoidFormerAIPlugin
+    from voidformer.quantum.hardware_tuner import QuantumHardwareResourceTuner
 
 
 class QuantumEngineeringBridge:
@@ -26,8 +28,13 @@ class QuantumEngineeringBridge:
         self.ibm_token = ibm_token
         self.has_physical_qpu = False
         self.active_backend = "virtual_statevector"
+        self.tuner = QuantumHardwareResourceTuner()
 
         self._initialize_backend_bridge()
+
+    def auto_tune_hardware_resources(self) -> Dict[str, Any]:
+        """Inspect host specifications and auto-tune thread count, device, and max simulated qubits."""
+        return self.tuner.compute_optimal_simulation_config()
 
     def _initialize_backend_bridge(self):
         """Auto-detect available quantum backends (IBM QPU vs Virtual Simulator)."""

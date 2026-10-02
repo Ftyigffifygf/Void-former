@@ -55,9 +55,17 @@ class QuantumPersonalSpaceVault(nn.Module):
         psi = torch.complex(amp_raw[..., 0], amp_raw[..., 1])
         psi = psi / (torch.norm(psi, dim=-1, keepdim=True) + 1e-8)
 
-        # Apply private non-invertible phase encryption
+        # Apply private non-invertible phase encryption and quantum state interference
         phase_encrypt = torch.exp(1j * self.private_key_phases)
-        psi_protected = psi * phase_encrypt
+        psi_encrypted = psi * phase_encrypt
+
+        # Complex basis interference transformation so phases alter Born probability distributions
+        real_part = psi_encrypted.real
+        imag_part = psi_encrypted.imag
+        psi_protected = torch.complex(
+            real_part - imag_part,
+            real_part + imag_part
+        ) / math.sqrt(2)
 
         # Project back to protected classical space
         probs = torch.abs(psi_protected) ** 2
@@ -133,8 +141,9 @@ class QuantumVoidFormerAIPlugin(nn.Module):
         hilbert_memory = self.qsre.hilbert_memory
         psi = hilbert_memory(x)
 
-        # Qubit space rotation phase matrix
-        rotation_phase = torch.tensor(math.cos(angle_x + angle_z) + 1j * math.sin(angle_x + angle_z), device=x.device, dtype=torch.complex64)
+        # Qubit space rotation phase matrix with basis-state variation
+        phase_angles = torch.linspace(angle_x, angle_z, self.qsre.hilbert_dim, device=x.device)
+        rotation_phase = torch.exp(1j * phase_angles)
         psi_rotated = psi * rotation_phase
 
         born_decoder = self.qsre.born_decoder
