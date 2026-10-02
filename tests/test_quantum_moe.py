@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import torch
-import pytest
 
 from quantum.superposition_moe import (
     QuantumSuperpositionTokenEmbedder,

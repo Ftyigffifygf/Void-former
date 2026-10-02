@@ -9,7 +9,6 @@ from typing import Iterable
 
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
 
 from ..models import VoidFormerModel
 from ..utils.logging import get_logger

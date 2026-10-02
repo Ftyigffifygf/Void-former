@@ -12,7 +12,6 @@ try:
 except ImportError:
     from voidformer.models.quantum_voidformer import QuantumVoidFormer
     from voidformer.models.voidformer import VoidFormerModel
-    from voidformer.quantum.measurement import CollapseProtocol
 
 
 def create_model(

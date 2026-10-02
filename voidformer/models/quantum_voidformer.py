@@ -37,10 +37,7 @@ try:
     from ..layers import DualEmbedding
 except (ImportError, ValueError):
     from voidformer.quantum import (
-        VirtualQuantumProcessor,
-        QuantumCircuit,
         QuantumAlgorithm,
-        CollapseProtocol,
         QuantumKernelAttention,
         QuantumInspiredNeuralLayer,
         VQCLayer,
@@ -48,7 +45,6 @@ except (ImportError, ValueError):
         QuantumSuperpositionTokenEmbedder,
         QuantumSuperpositionMoE,
     )
-    from voidformer.layers import DualEmbedding
 
 
 @dataclass

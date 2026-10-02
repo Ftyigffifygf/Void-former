@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import math
 import torch
-import pytest
 
 from quantum.quantum_gates import RXGate, RYGate, RZGate, CNOTGate
 from quantum.qubit_state import QuantumStateVector

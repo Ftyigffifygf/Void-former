@@ -9,13 +9,12 @@ and automatic QPU / Virtual statevector simulator fallback.
 
 from __future__ import annotations
 
-from typing import Tuple, Optional, Dict, Any, Union
+from typing import Tuple, Optional, Dict, Any
 import math
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-from .superposition_thinking import QuantumSuperpositionReasoningEngine, QuantumHilbertMemory
+from .superposition_thinking import QuantumSuperpositionReasoningEngine
 from .superposition_moe import QuantumSuperpositionMoE
 from .autonomous_decision import QuantumAutonomousDecisionEngine
 

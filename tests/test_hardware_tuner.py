@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 from quantum.hardware_tuner import QuantumHardwareResourceTuner
 from harness.quantum_bridge import QuantumEngineeringBridge
 

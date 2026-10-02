@@ -6,7 +6,6 @@ objects and interface with Qiskit Aer simulators or IBM Quantum real hardware ba
 
 from __future__ import annotations
 
-from typing import Optional, Any
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit_aer import AerSimulator
 

@@ -20,7 +20,7 @@ from __future__ import annotations
 import time
 import math
 from dataclasses import dataclass, field
-from typing import Optional, Callable, List
+from typing import Optional, List
 from enum import Enum
 
 import torch

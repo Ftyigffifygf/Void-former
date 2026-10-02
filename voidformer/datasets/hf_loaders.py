@@ -6,7 +6,6 @@ is always available offline.
 
 from __future__ import annotations
 
-from typing import Callable
 
 import torch
 from torch.utils.data import Dataset

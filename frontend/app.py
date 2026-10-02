@@ -5,10 +5,9 @@ A Flask-based web interface for interacting with the unified field theory VM.
 Provides visual programming, field visualization, and real-time execution.
 """
 
-from flask import Flask, render_template, jsonify, request, send_from_directory
+from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
 import torch
-import json
 import sys
 import os
 
@@ -21,8 +20,6 @@ from unified_field import (
     InstructionType,
     FieldMode,
     UnifiedOperator,
-    FieldEquations,
-    compute_field_configuration,
 )
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
