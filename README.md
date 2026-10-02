@@ -50,6 +50,7 @@ python -m voidformer.test_quantum_simple
 | 🔀 **Quantum MoE** | Quantum Superposition Mixture of Experts with fidelity routing | ✅ |
 | 🔤 **Quantum Tokenizer** | Quantum Superposition Token Embedder in Hilbert space | ✅ |
 | 🤖 **Autonomous Engine** | Multi-trajectory $N=2^n$ simulation with amplitude amplification | ✅ |
+| 🐳 **DeepSeek Harness** | DeepSeek R1/V3 quantum evaluation harness with Q-PRM & GRPO | ✅ |
 | 🛠️ **Custom Harness** | Universal Argon-inspired customizable task harness | ✅ |
 | 💻 **Hardware Auto-Tuner**| Dynamic host CPU/RAM/CUDA memory auto-tuning | ✅ |
 | 🔌 **AI Plugin Bridge** | Universal Quantum Plugin to wrap any AI/LLM model | ✅ |
@@ -144,6 +145,7 @@ voidformer/
 │   ├── plugin_bridge.py       # 🆕 UNIVERSAL AI PLUGIN & PERSONAL SPACE VAULT
 │   ├── autonomous_decision.py # 🆕 AUTONOMOUS DECISION ENGINE & ARGON HARNESS
 │   ├── hardware_tuner.py      # 🆕 HOST HARDWARE RESOURCE AUTO-TUNER
+│   ├── deepseek_quantum_harness.py # 🆕 DEEPSEEK QUANTUM HARNESS (Q-PRM & GRPO)
 │   └── __init__.py
 ├── quantum_init.py            # 🆕 QUANTUM PROCESSOR REGISTRY & ENTRY POINT
 ├── models/
@@ -240,6 +242,36 @@ config = bridge.auto_tune_hardware_resources()
 print(f"Host Device: {config['selected_device']}")
 print(f"Optimal Threads: {config['optimal_num_threads']}")
 print(f"Max Safe Simulated Qubits: {config['max_safe_simulated_qubits']}")
+```
+
+## DeepSeek Quantum Evaluation Harness (Q-PRM & GRPO)
+
+VoidFormer customizes the DeepSeek R1/V3 evaluation harness into a quantum-native evaluation pipeline (`harness/deepseek_quantum_harness.py`):
+
+- **`DeepSeekQuantumHarness`**: Runs multi-candidate quantum reasoning trajectory evaluations on VoidFormer models.
+- **`QuantumProcessRewardModel` (Q-PRM)**: Evaluates step-by-step reasoning trajectory quality directly on Hilbert space state vectors.
+- **`GRPOQuantumRewardNormalizer`**: Applies Group Relative Policy Optimization advantage normalization across parallel quantum reasoning pathways.
+
+```python
+from voidformer.harness.deepseek_quantum_harness import DeepSeekQuantumHarness
+from voidformer.harness import create_model
+import torch
+
+model = create_model(model_type="quantum", vocab_size=50257, d_model=256)
+harness = DeepSeekQuantumHarness(d_model=256, n_vqc_qubits=8, group_size=4)
+
+input_ids = torch.randint(0, 50257, (2, 16))
+logits, diagnostics = harness.evaluate_reasoning_task(model, input_ids)
+
+print(f"Harness Name: {diagnostics['harness_name']}")
+print(f"Group Rewards: {diagnostics['group_rewards']}")
+print(f"GRPO Advantages: {diagnostics['grpo_advantages']}")
+print(f"Best Trajectory Index: {diagnostics['selected_best_trajectory_idx']}")
+```
+
+Run via CLI:
+```bash
+python -m voidformer.harness.cli deepseek-eval
 ```
 
 ## Autonomous Decision Simulation Engine & Customizable Argon Harness
