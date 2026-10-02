@@ -49,6 +49,8 @@ python -m voidformer.test_quantum_simple
 | 🧠 **QSRE Engine** | Quantum Superposition Reasoning Engine (Hilbert latent thinking) | ✅ |
 | 🔀 **Quantum MoE** | Quantum Superposition Mixture of Experts with fidelity routing | ✅ |
 | 🔤 **Quantum Tokenizer** | Quantum Superposition Token Embedder in Hilbert space | ✅ |
+| 🤖 **Autonomous Engine** | Multi-trajectory $N=2^n$ simulation with amplitude amplification | ✅ |
+| 🛠️ **Custom Harness** | Universal Argon-inspired customizable task harness | ✅ |
 | 🔌 **AI Plugin Bridge** | Universal Quantum Plugin to wrap any AI/LLM model | ✅ |
 | 🔒 **Personal Space Vault**| Non-invertible quantum phase data protection & encryption | ✅ |
 | 🧮 **Qubit State Manager** | Complex state vectors in 2^n Hilbert space | ✅ |
@@ -139,6 +141,7 @@ voidformer/
 │   ├── superposition_thinking.py # 🆕 QUANTUM SUPERPOSITION REASONING ENGINE (QSRE)
 │   ├── superposition_moe.py   # 🆕 QUANTUM SUPERPOSITION MOE & TOKEN EMBEDDER
 │   ├── plugin_bridge.py       # 🆕 UNIVERSAL AI PLUGIN & PERSONAL SPACE VAULT
+│   ├── autonomous_decision.py # 🆕 AUTONOMOUS DECISION ENGINE & ARGON HARNESS
 │   └── __init__.py
 ├── quantum_init.py            # 🆕 QUANTUM PROCESSOR REGISTRY & ENTRY POINT
 ├── models/
@@ -221,6 +224,42 @@ print(f'Entanglement: {diagnostics.get(\"is_entangled\", False)}')
 | **⏰ Virtual Quantum Clock** | Temporal coherence enforcement | ✅ Implemented |
 | **📉 Decoherence Simulation** | 5 physical models (exponential, gaussian, etc.) | ✅ Implemented |
 | **⚡ Forced Collapse** | Automatic measurement at deadline | ✅ Implemented |
+
+## Autonomous Decision Simulation Engine & Customizable Argon Harness
+
+VoidFormer includes an **Autonomous Quantum Decision Simulation Engine** and **Customizable Argon Harness**:
+
+- **`QuantumAutonomousDecisionEngine`**: Evaluates $N = 2^n$ decision pathways simultaneously in Hilbert superposition. Uses Grover-inspired quantum oracle reflections and constructive wave interference to amplify optimal solution states with minimal token usage.
+- **`CustomizableQuantumHarness`**: Universal Argon-inspired harness adaptable to any task, domain, or software scenario (e.g. business idea feasibility analysis, complex code generation, system design optimization).
+
+```python
+import torch
+from voidformer.quantum.autonomous_decision import (
+    QuantumAutonomousDecisionEngine,
+    CustomizableQuantumHarness,
+)
+
+# 1. Initialize Customizable Quantum Harness for any domain or software task
+harness = CustomizableQuantumHarness(
+    d_model=256,
+    n_vqc_qubits=8,  # Simulates 2^8 = 256 decision trajectories in parallel
+    domain_name="business_and_coding_genius"
+)
+
+# 2. Define custom domain evaluator function (e.g., feasibility / quality score)
+def custom_business_evaluator(probs: torch.Tensor) -> torch.Tensor:
+    return torch.sigmoid(probs.mean(dim=-1, keepdim=True))
+
+# 3. Simulate all outcomes simultaneously in superposition
+input_data = torch.randn(2, 16, 256)
+optimal_solution, diagnostics = harness.simulate_task(
+    input_data,
+    custom_domain_evaluator=custom_business_evaluator
+)
+
+print(f"Simulated Trajectories: {diagnostics['num_simulated_trajectories']}")
+print(f"Amplification Iterations: {diagnostics['amplification_iterations']}")
+```
 
 ## Universal Quantum AI Plugin & Personal Space Data Protection Vault
 

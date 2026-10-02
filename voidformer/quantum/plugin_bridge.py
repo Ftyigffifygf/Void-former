@@ -17,6 +17,7 @@ import torch.nn.functional as F
 
 from .superposition_thinking import QuantumSuperpositionReasoningEngine, QuantumHilbertMemory
 from .superposition_moe import QuantumSuperpositionMoE
+from .autonomous_decision import QuantumAutonomousDecisionEngine
 
 
 class QuantumPersonalSpaceVault(nn.Module):
@@ -99,6 +100,14 @@ class QuantumVoidFormerAIPlugin(nn.Module):
             thinking_steps=thinking_steps,
         )
 
+        # Autonomous Parallel Decision Engine
+        self.autonomous_decision_engine = QuantumAutonomousDecisionEngine(
+            d_model=d_model,
+            n_vqc_qubits=n_vqc_qubits,
+            num_simulations=16,
+            amplification_iterations=3,
+        )
+
         # Optional Quantum MoE
         self.use_quantum_moe = use_quantum_moe
         if use_quantum_moe:
@@ -110,6 +119,14 @@ class QuantumVoidFormerAIPlugin(nn.Module):
             )
 
         self.layer_norm = nn.LayerNorm(d_model)
+
+    def simulate_autonomous_decision(
+        self,
+        x: torch.Tensor,
+        custom_evaluator_fn: Optional[Any] = None,
+    ) -> Tuple[torch.Tensor, Dict[str, Any]]:
+        """Simulates N decision pathways simultaneously in Hilbert superposition."""
+        return self.autonomous_decision_engine(x, custom_evaluator_fn=custom_evaluator_fn)
 
     def rotate_qubit_space(self, x: torch.Tensor, angle_x: float = 0.1, angle_z: float = 0.2) -> torch.Tensor:
         """Applies global qubit space rotation U(theta) to compress input context."""

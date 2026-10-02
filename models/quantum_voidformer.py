@@ -21,19 +21,34 @@ from typing import Optional
 import torch
 import torch.nn as nn
 
-from ..quantum import (
-    VirtualQuantumProcessor,
-    QuantumCircuit,
-    QuantumAlgorithm,
-    CollapseProtocol,
-    QuantumKernelAttention,
-    QuantumInspiredNeuralLayer,
-    VQCLayer,
-    QuantumSuperpositionReasoningEngine,
-    QuantumSuperpositionTokenEmbedder,
-    QuantumSuperpositionMoE,
-)
-from ..layers import DualEmbedding
+try:
+    from ..quantum import (
+        VirtualQuantumProcessor,
+        QuantumCircuit,
+        QuantumAlgorithm,
+        CollapseProtocol,
+        QuantumKernelAttention,
+        QuantumInspiredNeuralLayer,
+        VQCLayer,
+        QuantumSuperpositionReasoningEngine,
+        QuantumSuperpositionTokenEmbedder,
+        QuantumSuperpositionMoE,
+    )
+    from ..layers import DualEmbedding
+except (ImportError, ValueError):
+    from voidformer.quantum import (
+        VirtualQuantumProcessor,
+        QuantumCircuit,
+        QuantumAlgorithm,
+        CollapseProtocol,
+        QuantumKernelAttention,
+        QuantumInspiredNeuralLayer,
+        VQCLayer,
+        QuantumSuperpositionReasoningEngine,
+        QuantumSuperpositionTokenEmbedder,
+        QuantumSuperpositionMoE,
+    )
+    from voidformer.layers import DualEmbedding
 
 
 @dataclass
