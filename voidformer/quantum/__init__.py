@@ -18,6 +18,8 @@ from .quantum_gates import (
     ToffoliGate,
     ControlledPhaseGate,
 )
+from .backend_integration import BackendIntegration
+from .vqc_layer import VQCLayer, VQCAutogradFunction, execute_vqc, compute_shot_expectation_and_variance
 from .measurement import MeasurementLayer, CollapseProtocol
 from .quantum_processor import VirtualQuantumProcessor, QuantumCircuit, QuantumAlgorithm
 from .entanglement import EntanglementManager, BellStateGenerator
@@ -52,6 +54,10 @@ from .plugin_bridge import (
     QuantumPersonalSpaceVault,
     QuantumVoidFormerAIPlugin,
 )
+from .autonomous_decision import (
+    QuantumAutonomousDecisionEngine,
+    CustomizableQuantumHarness,
+)
 
 __all__ = [
     "QubitStateManager",
@@ -66,6 +72,11 @@ __all__ = [
     "TGate",
     "ToffoliGate",
     "ControlledPhaseGate",
+    "BackendIntegration",
+    "VQCLayer",
+    "VQCAutogradFunction",
+    "execute_vqc",
+    "compute_shot_expectation_and_variance",
     "MeasurementLayer",
     "CollapseProtocol",
     "VirtualQuantumProcessor",
@@ -94,4 +105,6 @@ __all__ = [
     "QuantumSuperpositionMoE",
     "QuantumPersonalSpaceVault",
     "QuantumVoidFormerAIPlugin",
+    "QuantumAutonomousDecisionEngine",
+    "CustomizableQuantumHarness",
 ]

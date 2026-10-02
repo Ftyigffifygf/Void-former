@@ -57,6 +57,10 @@ from .plugin_bridge import (
     QuantumPersonalSpaceVault,
     QuantumVoidFormerAIPlugin,
 )
+from .autonomous_decision import (
+    QuantumAutonomousDecisionEngine,
+    CustomizableQuantumHarness,
+)
 
 __all__ = [
     "QubitStateManager",
@@ -107,4 +111,6 @@ __all__ = [
     "QuantumSuperpositionMoE",
     "QuantumPersonalSpaceVault",
     "QuantumVoidFormerAIPlugin",
+    "QuantumAutonomousDecisionEngine",
+    "CustomizableQuantumHarness",
 ]

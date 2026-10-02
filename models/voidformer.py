@@ -7,7 +7,10 @@ from dataclasses import dataclass, field
 import torch
 import torch.nn as nn
 
-from ..layers import DualEmbedding, RiemannianGeodesicTracker, VoidFormerBlock
+try:
+    from ..layers import DualEmbedding, RiemannianGeodesicTracker, VoidFormerBlock
+except (ImportError, ValueError):
+    from voidformer.layers import DualEmbedding, RiemannianGeodesicTracker, VoidFormerBlock
 
 
 @dataclass

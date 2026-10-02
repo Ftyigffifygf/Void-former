@@ -21,18 +21,34 @@ from typing import Optional
 import torch
 import torch.nn as nn
 
-from ..quantum import (
-    VirtualQuantumProcessor,
-    QuantumCircuit,
-    QuantumAlgorithm,
-    CollapseProtocol,
-    QuantumKernelAttention,
-    QuantumInspiredNeuralLayer,
-    QuantumSuperpositionReasoningEngine,
-    QuantumSuperpositionTokenEmbedder,
-    QuantumSuperpositionMoE,
-)
-from ..layers import DualEmbedding
+try:
+    from ..quantum import (
+        VirtualQuantumProcessor,
+        QuantumCircuit,
+        QuantumAlgorithm,
+        CollapseProtocol,
+        QuantumKernelAttention,
+        QuantumInspiredNeuralLayer,
+        VQCLayer,
+        QuantumSuperpositionReasoningEngine,
+        QuantumSuperpositionTokenEmbedder,
+        QuantumSuperpositionMoE,
+    )
+    from ..layers import DualEmbedding
+except (ImportError, ValueError):
+    from voidformer.quantum import (
+        VirtualQuantumProcessor,
+        QuantumCircuit,
+        QuantumAlgorithm,
+        CollapseProtocol,
+        QuantumKernelAttention,
+        QuantumInspiredNeuralLayer,
+        VQCLayer,
+        QuantumSuperpositionReasoningEngine,
+        QuantumSuperpositionTokenEmbedder,
+        QuantumSuperpositionMoE,
+    )
+    from voidformer.layers import DualEmbedding
 
 
 @dataclass
@@ -61,6 +77,10 @@ class QuantumVoidFormerBlock(nn.Module):
         d_ff: int,
         n_qubits: int = 4,
         n_vqc_qubits: int = 4,
+        n_vqc_layers: int = 2,
+        use_vqc_layer: bool = True,
+        vqc_backend: str = "statevector",
+        vqc_shots: int = 1024,
         dropout: float = 0.1,
         use_quantum_attention: bool = True,
         use_tensor_network_ffn: bool = False,
@@ -124,6 +144,18 @@ class QuantumVoidFormerBlock(nn.Module):
         )
         self.norm3 = nn.LayerNorm(d_model)
 
+        # Hardware-bound VQC layer
+        self.use_vqc_layer = use_vqc_layer
+        if use_vqc_layer:
+            self.vqc_layer = VQCLayer(
+                d_model=d_model,
+                n_vqc_qubits=n_vqc_qubits,
+                n_vqc_layers=n_vqc_layers,
+                backend=vqc_backend,
+                shots=vqc_shots,
+                dropout=dropout,
+            )
+
         # Quantum Superposition Reasoning Engine (QSRE)
         if use_superposition_thinking:
             self.qsre = QuantumSuperpositionReasoningEngine(
@@ -182,7 +214,12 @@ class QuantumVoidFormerBlock(nn.Module):
         diagnostics["quantum_layer"] = quantum_diag
         x = self.norm3(x + quantum_out)
 
-        # 4. Quantum Superposition Mixture of Experts
+        # 4. Hardware-bound VQC layer
+        if self.use_vqc_layer:
+            x, vqc_diag = self.vqc_layer(x)
+            diagnostics["vqc_layer"] = vqc_diag
+
+        # 5. Quantum Superposition Mixture of Experts
         if self.use_quantum_moe:
             x = self.quantum_moe(x)
             diagnostics["quantum_moe"] = True
@@ -212,6 +249,10 @@ class QuantumVoidFormer(nn.Module):
         d_ff: int = 512,
         n_qubits_per_token: int = 4,
         n_vqc_qubits: int = 4,
+        n_vqc_layers: int = 2,
+        use_vqc_layer: bool = True,
+        vqc_backend: str = "statevector",
+        vqc_shots: int = 1024,
         max_seq_len: int = 512,
         collapse_protocol: str = "entropy_gated",
         enable_entanglement: bool = True,
@@ -271,6 +312,10 @@ class QuantumVoidFormer(nn.Module):
                 d_ff=d_ff,
                 n_qubits=n_qubits_per_token,
                 n_vqc_qubits=n_vqc_qubits,
+                n_vqc_layers=n_vqc_layers,
+                use_vqc_layer=use_vqc_layer,
+                vqc_backend=vqc_backend,
+                vqc_shots=vqc_shots,
                 dropout=dropout,
                 use_quantum_attention=use_quantum_attention,
                 use_tensor_network_ffn=use_tensor_network_ffn,
