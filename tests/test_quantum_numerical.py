@@ -15,16 +15,10 @@ from qiskit.quantum_info import Statevector
 
 from quantum import (
     QuantumStateVector,
-    QubitStateManager,
     HadamardGate,
     CNOTGate,
     PauliXGate,
-    PauliYGate,
-    PauliZGate,
-    PhaseGate,
-    TGate,
     ToffoliGate,
-    ControlledPhaseGate,
     BellStateGenerator,
     EntanglementManager,
     MeasurementLayer,

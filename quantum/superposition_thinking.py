@@ -11,11 +11,8 @@ embedding space.
 
 from __future__ import annotations
 
-from typing import Tuple, Optional, Dict, Any
-import math
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class QuantumHilbertMemory(nn.Module):

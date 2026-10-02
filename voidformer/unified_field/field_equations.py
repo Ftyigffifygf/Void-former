@@ -16,12 +16,11 @@ INFORMATION FLOW EQUATION:
 
 from __future__ import annotations
 
-from typing import Optional, Tuple, Dict, Any
+from typing import Tuple
 from dataclasses import dataclass
 
 import torch
 import torch.nn as nn
-import math
 
 
 @dataclass

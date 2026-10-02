@@ -12,14 +12,14 @@ The Virtual Quantum Processor serves as the "quantum CPU" for the Voidformer.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple, Callable
+from typing import List, Optional, Tuple
 from enum import Enum
 
 import torch
 import torch.nn as nn
 
 from .qubit_state import QuantumStateVector, QubitStateManager
-from .quantum_gates import QuantumGate, QuantumGateRegistry
+from .quantum_gates import QuantumGateRegistry
 from .entanglement import EntanglementManager, BellStateGenerator
 from .measurement import MeasurementLayer, CollapseProtocol
 

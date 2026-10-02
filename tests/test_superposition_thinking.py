@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import torch
-import torch.nn as nn
-import pytest
 
 from quantum.superposition_thinking import (
     QuantumHilbertMemory,

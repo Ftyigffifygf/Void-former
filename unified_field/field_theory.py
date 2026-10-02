@@ -25,8 +25,7 @@ from __future__ import annotations
 
 import math
 from enum import Enum
-from dataclasses import dataclass, field as dc_field
-from typing import Optional, Dict, Any, List
+from dataclasses import dataclass
 
 import torch
 import torch.nn as nn

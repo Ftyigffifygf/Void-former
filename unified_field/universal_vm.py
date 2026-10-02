@@ -17,7 +17,6 @@ from typing import Optional, Dict, Any, List, Callable
 from enum import Enum
 
 import torch
-import torch.nn as nn
 
 from .field_theory import FieldMode, UnifiedComputationalField
 

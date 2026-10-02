@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 import math
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import torch
 
 
