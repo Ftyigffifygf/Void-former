@@ -11,7 +11,7 @@ if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
 import torch
-from harness.model_factory import create_model
+from voidformer.harness.model_factory import create_model
 
 
 def profile_scaling() -> list[dict]:

@@ -169,23 +169,25 @@ voidformer/
 
 ```bash
 # 1. Install dependencies
-pip install -r requirements.txt
+pip install -r requirements.txt && pip install -e .
 
-# 2. Test quantum processor
-python -m voidformer.quantum_init
+# 2. Train quantum-enhanced model
+python train.py --config voidformer/configs/tiny.yaml --model-type quantum --steps 100
 
-# 3. Train quantum-enhanced model (tiny config)
-python -m voidformer.train \
-    --config voidformer/configs/tiny.yaml \
-    --model-type quantum \
-    --steps 100
+# 3. Control run: train classical model on same data
+python train.py --config voidformer/configs/tiny.yaml --model-type classical --steps 100
 
-# 4. Inference with quantum processing
-python -m voidformer.infer \
-    --config voidformer/configs/tiny.yaml \
-    --model-type quantum \
-    --prompt "quantum entanglement enables" \
-    --use-quantum
+# 4. Generate text inference
+python infer.py --prompt "quantum entanglement enables" --use-quantum
+
+# 5. Evaluate checkpoint on held-out exam
+python evaluate.py --checkpoint experiments/tiny/model_latest.pt --exam-file voidformer/datasets/sample_exam.jsonl
+
+# 6. Run self-play classroom pipeline
+python classroom.py --rounds 2 --steps-per-round 10
+
+# 7. Start OpenAI-compatible FastAPI server
+python serve.py --port 8000
 
 # 5. Run quantum algorithm demo
 python -c "

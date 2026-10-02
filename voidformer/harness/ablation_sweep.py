@@ -9,9 +9,9 @@ repo_root = Path(__file__).parent.parent.resolve()
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
-from harness.model_factory import create_model
-from harness.data import create_dataloader
-from harness.train_loop import train_model
+from voidformer.harness.model_factory import create_model
+from voidformer.harness.data import create_dataloader
+from voidformer.harness.train_loop import train_model
 
 
 def run_ablation_sweep(steps: int = 5) -> list[dict]:

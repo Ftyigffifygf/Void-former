@@ -54,7 +54,12 @@ def train_model(
         output = model(x)
         logits = output.logits if hasattr(output, "logits") else output
 
-        loss = criterion(logits.view(-1, logits.size(-1)), y.view(-1))
+        # Internal shifting convention: logits[:, :-1] vs y[:, 1:]
+        if logits.ndim == 3 and y.ndim == 2 and logits.size(1) == y.size(1) and logits.size(1) > 1:
+            logits = logits[:, :-1, :].contiguous()
+            y = y[:, 1:].contiguous()
+
+        loss = criterion(logits.reshape(-1, logits.size(-1)), y.reshape(-1))
         loss.backward()
         optimizer.step()
 

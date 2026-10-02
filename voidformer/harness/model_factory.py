@@ -5,13 +5,8 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
-try:
-    from models.quantum_voidformer import QuantumVoidFormer
-    from models.voidformer import VoidFormerModel
-    from quantum.measurement import CollapseProtocol
-except ImportError:
-    from voidformer.models.quantum_voidformer import QuantumVoidFormer
-    from voidformer.models.voidformer import VoidFormerModel
+from voidformer.models.quantum_voidformer import QuantumVoidFormer
+from voidformer.models.voidformer import VoidFormerModel
 
 
 def create_model(
@@ -48,6 +43,7 @@ def create_model(
         ).to(dev)
 
     elif model_type == "quantum":
+        use_vqc_layer = kwargs.get("use_vqc_layer", True)
         use_superposition_thinking = kwargs.get("use_superposition_thinking", True)
         thinking_steps = kwargs.get("thinking_steps", 4)
         use_quantum_moe = kwargs.get("use_quantum_moe", False)
@@ -65,6 +61,7 @@ def create_model(
             max_seq_len=max_seq_len,
             collapse_protocol=collapse_protocol,
             enable_entanglement=enable_entanglement,
+            use_vqc_layer=use_vqc_layer,
             use_tensor_network_ffn=use_tensor_network_ffn,
             use_superposition_thinking=use_superposition_thinking,
             thinking_steps=thinking_steps,

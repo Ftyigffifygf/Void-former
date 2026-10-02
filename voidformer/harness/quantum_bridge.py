@@ -5,14 +5,9 @@ from __future__ import annotations
 from typing import Dict, Any, Optional
 import torch
 
-try:
-    from quantum.backend_integration import BackendIntegration
-    from quantum.plugin_bridge import QuantumVoidFormerAIPlugin
-    from quantum.hardware_tuner import QuantumHardwareResourceTuner
-except ImportError:
-    from voidformer.quantum.backend_integration import BackendIntegration
-    from voidformer.quantum.plugin_bridge import QuantumVoidFormerAIPlugin
-    from voidformer.quantum.hardware_tuner import QuantumHardwareResourceTuner
+from voidformer.quantum.backend_integration import BackendIntegration
+from voidformer.quantum.plugin_bridge import QuantumVoidFormerAIPlugin
+from voidformer.quantum.hardware_tuner import QuantumHardwareResourceTuner
 
 
 class QuantumEngineeringBridge:

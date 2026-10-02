@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import torch
 
-from quantum.autonomous_decision import (
+from voidformer.quantum.autonomous_decision import (
     QuantumAutonomousDecisionEngine,
     CustomizableQuantumHarness,
 )
-from quantum.plugin_bridge import QuantumVoidFormerAIPlugin
+from voidformer.quantum.plugin_bridge import QuantumVoidFormerAIPlugin
 
 
 def test_quantum_autonomous_decision_engine_standalone():

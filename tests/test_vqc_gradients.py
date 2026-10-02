@@ -5,8 +5,8 @@ from __future__ import annotations
 import math
 import torch
 
-from quantum.quantum_gates import RXGate, RYGate, RZGate, CNOTGate
-from quantum.qubit_state import QuantumStateVector
+from voidformer.quantum.quantum_gates import RXGate, RYGate, RZGate, CNOTGate
+from voidformer.quantum.qubit_state import QuantumStateVector
 
 
 def simulate_vqc_expectation(
@@ -90,7 +90,7 @@ def test_parameter_shift_vs_finite_difference():
 
 def test_vqc_autograd_function_backward():
     """Verify VQCAutogradFunction computes exact parameter-shift gradients during PyTorch backward pass."""
-    from quantum.vqc_layer import execute_vqc
+    from voidformer.quantum.vqc_layer import execute_vqc
 
     n_qubits = 2
     n_layers = 1
@@ -108,7 +108,7 @@ def test_vqc_autograd_function_backward():
 
 def test_vqc_layer_forward_backward():
     """Verify VQCLayer forward and backward passes with PyTorch autograd."""
-    from quantum.vqc_layer import VQCLayer
+    from voidformer.quantum.vqc_layer import VQCLayer
 
     d_model = 16
     batch_size, seq_len = 2, 4
@@ -130,7 +130,7 @@ def test_vqc_layer_forward_backward():
 
 def test_shot_noise_expectation_and_variance():
     """Verify calculation of expectation values and finite-shot variance estimation."""
-    from quantum.vqc_layer import compute_shot_expectation_and_variance
+    from voidformer.quantum.vqc_layer import compute_shot_expectation_and_variance
 
     counts = {"00": 700, "11": 300}
     exp_vals, variances = compute_shot_expectation_and_variance(counts, n_qubits=2, shots=1000)

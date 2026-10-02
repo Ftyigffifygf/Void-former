@@ -10,13 +10,13 @@ repo_root = Path(__file__).parent.parent.resolve()
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
-from harness.node import AgentNode, QuantumBackendNode
-from harness.workflow import WorkflowDAG
-from harness.ab_benchmark import run_ab_benchmark
-from harness.ablation_sweep import run_ablation_sweep
-from harness.scaling_profile import profile_scaling
-from harness.deepseek_quantum_harness import DeepSeekQuantumHarness
-from harness.model_factory import create_model
+from voidformer.harness.node import AgentNode, QuantumBackendNode
+from voidformer.harness.workflow import WorkflowDAG
+from voidformer.harness.ab_benchmark import run_ab_benchmark
+from voidformer.harness.ablation_sweep import run_ablation_sweep
+from voidformer.harness.scaling_profile import profile_scaling
+from voidformer.harness.deepseek_quantum_harness import DeepSeekQuantumHarness
+from voidformer.harness.model_factory import create_model
 import torch
 
 

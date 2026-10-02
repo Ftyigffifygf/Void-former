@@ -5,12 +5,12 @@ from __future__ import annotations
 import torch
 import pytest
 
-from harness.deepseek_quantum_harness import (
+from voidformer.harness.deepseek_quantum_harness import (
     DeepSeekQuantumHarness,
     QuantumProcessRewardModel,
     GRPOQuantumRewardNormalizer,
 )
-from harness.cli import run_deepseek_quantum_eval
+from voidformer.harness.cli import run_deepseek_quantum_eval
 from voidformer.models.quantum_voidformer import QuantumVoidFormer
 
 
