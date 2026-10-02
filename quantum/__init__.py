@@ -53,6 +53,10 @@ from .superposition_moe import (
     QuantumSuperpositionRouter,
     QuantumSuperpositionMoE,
 )
+from .plugin_bridge import (
+    QuantumPersonalSpaceVault,
+    QuantumVoidFormerAIPlugin,
+)
 
 __all__ = [
     "QubitStateManager",
@@ -101,4 +105,6 @@ __all__ = [
     "QuantumSuperpositionExpert",
     "QuantumSuperpositionRouter",
     "QuantumSuperpositionMoE",
+    "QuantumPersonalSpaceVault",
+    "QuantumVoidFormerAIPlugin",
 ]
