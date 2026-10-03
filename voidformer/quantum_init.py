@@ -1,12 +1,13 @@
 """Initialization and Registry utilities for Voidformer Quantum Processing Infrastructure.
 
 Provides global initialization functions and runtime registry for
-VirtualQuantumProcessor instances connected to Voidformer models.
+VirtualQuantumProcessor instances connected to Voidformer models, as well as factory
+methods for quantum backends (Simulator, Aer, IBM Hardware).
 """
 
 from __future__ import annotations
 
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 import torch
 
 from voidformer.quantum.quantum_processor import VirtualQuantumProcessor
@@ -71,3 +72,22 @@ def reset_quantum_registry():
     """Clear registered quantum processors."""
     global _QUANTUM_PROCESSOR_REGISTRY
     _QUANTUM_PROCESSOR_REGISTRY = {}
+
+
+def get_backend(kind: str = "simulator", **kwargs: Any) -> Any:
+    """Factory function to get quantum backend.
+
+    Args:
+        kind: Type of backend ('simulator', 'ibm_aer', 'ibm_hardware', or 'ibm')
+        **kwargs: Additional keyword arguments passed to IBMBackend
+
+    Returns:
+        None for internal statevector simulator, or IBMBackend instance for Aer/IBM hardware.
+    """
+    kind = kind.lower()
+    if kind == "simulator":
+        return None
+    from voidformer.quantum.ibm_backend import IBMBackend
+
+    use_sim = kind in ("ibm_aer", "aer", "simulator_aer")
+    return IBMBackend(use_simulator=use_sim, **kwargs)

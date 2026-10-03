@@ -5,7 +5,7 @@ Entry point for initializing VirtualQuantumProcessor instances and quantum regis
 
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Optional, Union, Any
 import torch
 
 try:
@@ -28,20 +28,7 @@ def initialize_quantum_processor(
     device: Optional[torch.device] = None,
     name: str = "default_processor",
 ) -> VirtualQuantumProcessor:
-    """Initialize or retrieve a VirtualQuantumProcessor instance.
-
-    Args:
-        d_model: Dimensionality of token embeddings
-        n_qubits_per_token: Number of qubits per token
-        max_seq_len: Maximum sequence length
-        collapse_protocol: Quantum measurement collapse protocol
-        enable_entanglement: Enable inter-token entanglement
-        device: Torch device (cpu/cuda)
-        name: Unique identifier for processor instance
-
-    Returns:
-        Initialized VirtualQuantumProcessor instance
-    """
+    """Initialize or retrieve a VirtualQuantumProcessor instance."""
     if isinstance(collapse_protocol, str):
         try:
             collapse_protocol = CollapseProtocol(collapse_protocol.lower())
@@ -64,6 +51,20 @@ def initialize_quantum_processor(
 def get_quantum_processor(name: str = "default_processor") -> Optional[VirtualQuantumProcessor]:
     """Retrieve an initialized processor from global registry."""
     return _PROCESSOR_REGISTRY.get(name)
+
+
+def get_backend(kind: str = "simulator", **kwargs: Any) -> Any:
+    """Factory function to get quantum backend."""
+    kind = kind.lower()
+    if kind == "simulator":
+        return None
+    try:
+        from voidformer.quantum.ibm_backend import IBMBackend
+    except ImportError:
+        from quantum.ibm_backend import IBMBackend
+
+    use_sim = kind in ("ibm_aer", "aer", "simulator_aer")
+    return IBMBackend(use_simulator=use_sim, **kwargs)
 
 
 if __name__ == "__main__":
