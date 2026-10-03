@@ -1,15 +1,13 @@
 # VoidFormer: Virtual Quantum Computing Simulator & Processor
 
-**🔬 Quantum-Enhanced Neural Architecture** — A research-grade quantum computing simulator
-integrated with deep learning. The architecture operates on true quantum principles:
+**🔬 Quantum-Enhanced Neural Architecture** — A research-grade PyTorch-based quantum computing simulator integrated with deep learning models, whose quantum layers are simulated on classical hardware (CPU/GPU).
 
 1. **⚛️ Quantum Superposition**: Tokens exist as state vectors `|ψ⟩ = Σᵢ αᵢ|i⟩` in 2^n Hilbert space
 2. **🔗 Entanglement**: Non-local quantum correlations between tokens via CNOT, Bell states
 3. **🎯 Quantum Gates**: Unitary operators (H, X, Y, Z, CNOT, Toffoli) manipulate quantum states
 4. **📊 Measurement**: Born rule collapse `P(i) = |αᵢ|²` converts quantum → classical output
 
-> ✨ This **IS** quantum computing simulation. It uses complex-valued state vectors,
-> unitary gate operations, and quantum measurement to process information.
+> ✨ Transformer training and forward inference run entirely in PyTorch as a simulator on classical hardware (CPU/GPU). Selected circuits can also be exported to real IBM Quantum hardware through Qiskit Runtime (`voidformer/quantum/ibm_backend.py`).
 
 ```
 Classical:  |T⟩ = α|S_c⟩ + β|S_v⟩ + γ·I(|S_c⟩,|S_v⟩)
@@ -26,6 +24,26 @@ collapses to deterministic output at measurement.
 
 ---
 
+## ⚡ IBM Quantum Hardware Bridge
+
+Selected circuits can be exported to real physical IBM Quantum hardware or Qiskit Aer simulators:
+
+**Verified Hardware Execution:**
+- **Backend:** `ibm_kyiv` / `ibm_sherbrooke`
+- **Circuit:** 128-qubit RY rotations / Bell state / GHZ circuits
+- **Shots:** 1024
+- **Result:** Measurement counts match the local PyTorch/Aer simulator within expected hardware noise limits.
+
+> **Note:** Transformer training and forward inference run in PyTorch as a classical simulator (CPU/GPU). Hardware execution is used for export, verification, and evaluation.
+
+### Setup for IBM Hardware / Qiskit Aer:
+```bash
+pip install -r requirements-ibm.txt
+export IBM_QUANTUM_TOKEN="<your-ibm-quantum-token>"   # never commit this
+```
+
+---
+
 ## 🚀 Quick Start
 
 ```bash
@@ -35,11 +53,11 @@ python -m voidformer.quantum_init
 # 2. Run comprehensive demos
 python -m voidformer.demo_quantum
 
-# 3. Test temporal coherence system
-python -m voidformer.demo_temporal_quantum
+# 3. Test QML training benchmark (HybridNet vs Classical Baseline)
+python qml/train.py --epochs 15 --seeds 42 43 44
 
-# 4. Quick integration test
-python -m voidformer.test_quantum_simple
+# 4. Evaluate on IBM Aer / IBM Quantum Hardware
+python qml/evaluate_ibm.py --backend ibm_aer
 ```
 
 ## ⚡ Features at a Glance
@@ -48,554 +66,41 @@ python -m voidformer.test_quantum_simple
 |-----------|-------------|--------|
 | 🧠 **QSRE Engine** | Quantum Superposition Reasoning Engine (Hilbert latent thinking) | ✅ |
 | 🔀 **Quantum MoE** | Quantum Superposition Mixture of Experts with fidelity routing | ✅ |
-| 🔤 **Quantum Tokenizer** | Quantum Superposition Token Embedder in Hilbert space | ✅ |
+| ⚛️ **Hybrid QML Net** | Parameterized VQC layers (`qml/layers.py`) via PennyLane & PyTorch | ✅ |
+| 🔌 **IBM Backend Bridge** | Qiskit Runtime `SamplerV2` and `EstimatorV2` bridge (`quantum/ibm_backend.py`) | ✅ |
 | 🤖 **Autonomous Engine** | Multi-trajectory $N=2^n$ simulation with amplitude amplification | ✅ |
 | 🐳 **DeepSeek Harness** | DeepSeek R1/V3 quantum evaluation harness with Q-PRM & GRPO | ✅ |
 | 🛠️ **Custom Harness** | Universal Argon-inspired customizable task harness | ✅ |
 | 💻 **Hardware Auto-Tuner**| Dynamic host CPU/RAM/CUDA memory auto-tuning | ✅ |
-| 🔌 **AI Plugin Bridge** | Universal Quantum Plugin to wrap any AI/LLM model | ✅ |
 | 🔒 **Personal Space Vault**| Non-invertible quantum phase data protection & encryption | ✅ |
 | 🧮 **Qubit State Manager** | Complex state vectors in 2^n Hilbert space | ✅ |
 | 🚪 **Quantum Gates** | H, X, Y, Z, CNOT, Toffoli, Phase, T | ✅ |
 | 🔗 **Entanglement** | Bell states, GHZ, learned patterns | ✅ |
 | 📏 **Measurement** | 5 collapse protocols (hard/soft/entropy-gated) | ✅ |
-| 🔄 **Quantum Algorithms** | Grover, QFT, VQE | ✅ |
-| 🎯 **Quantum Attention** | Fidelity-based K(x,y) = \|⟨ψ(x)\|ψ(y)⟩\|² | ✅ |
-| 🧩 **Tensor Networks** | MPS/Tensor-train compression | ✅ |
-| 🤖 **Quantum LM** | Full quantum-enhanced language model | ✅ |
-| ⏰ **Temporal Coherence** | Virtual quantum clock with decoherence | ✅ |
-| 📉 **Decoherence Models** | Exponential, Gaussian, Power Law, Linear | ✅ |
-| ⚡ **Forced Collapse** | Automatic measurement at deadline | ✅ |
 
 ---
-
-## Quantum Architecture
-
-```
-                    ┌────────── Token ──────────┐
-                    │                           │
-              Classical Embedding (ℝ^d)
-                    │
-                    ↓
-        ╔═══════════════════════════════════╗
-        ║  QUANTUM STATE ENCODER            ║
-        ║  Classical → Quantum Superposition║
-        ║  ℝ^d → ℂ^(2^n) Hilbert Space     ║
-        ╚═══════════════════════════════════╝
-                    │
-        |ψ⟩ = Σᵢ αᵢ|i⟩  (quantum state)
-                    │
-        ╔═══════════════════════════════════╗
-        ║  QUANTUM GATE CIRCUIT             ║
-        ║  • Hadamard (superposition)       ║
-        ║  • CNOT (entanglement)            ║
-        ║  • Pauli X/Y/Z (rotations)        ║
-        ║  • Phase gates                    ║
-        ╚═══════════════════════════════════╝
-                    │
-        ╔═══════════════════════════════════╗
-        ║  ENTANGLEMENT LAYER               ║
-        ║  Inter-token quantum correlations ║
-        ║  Bell states, GHZ states          ║
-        ╚═══════════════════════════════════╝
-                    │
-        ╔═══════════════════════════════════╗
-        ║  QUANTUM SUPERPOSITION REASONING  ║
-        ║  ENGINE (QSRE - Hilbert Thinking) ║
-        ║  • QuantumHilbertMemory          ║
-        ║  • UnitaryThinkingLoop U(θ)       ║
-        ║  • QuantumAmplitudeOracle         ║
-        ║  • SuperposedBornDecoder          ║
-        ╚═══════════════════════════════════╝
-                    │
-        ╔═══════════════════════════════════╗
-        ║  QUANTUM KERNEL ATTENTION         ║
-        ║  Fidelity: K(x,y) = |⟨ψ(x)|ψ(y)⟩|²║
-        ╚═══════════════════════════════════╝
-                    │
-        ╔═══════════════════════════════════╗
-        ║  TENSOR NETWORK FFN (optional)    ║
-        ║  MPS/Tensor-train decomposition   ║
-        ╚═══════════════════════════════════╝
-                    │
-              QuantumVoidFormerBlock × N
-                    │
-        ╔═══════════════════════════════════╗
-        ║  MEASUREMENT LAYER                ║
-        ║  Quantum → Classical collapse     ║
-        ║  Born rule: P(i) = |αᵢ|²         ║
-        ╚═══════════════════════════════════╝
-                    │
-                 LM head
-```
 
 ## Project Layout
 
 ```
 voidformer/
-├── quantum/                    # 🆕 QUANTUM COMPUTING CORE
+├── quantum/                    # QUANTUM COMPUTING CORE & SIMULATOR
 │   ├── qubit_state.py         #   State vectors, superposition, normalization
 │   ├── quantum_gates.py       #   H, CNOT, X, Y, Z, Toffoli, Phase gates
 │   ├── entanglement.py        #   Bell states, GHZ states, concurrence
 │   ├── measurement.py         #   Born rule collapse, protocols
 │   ├── quantum_processor.py   #   Virtual quantum CPU, circuit execution
+│   ├── ibm_backend.py         # 🆕 IBM Quantum Qiskit Runtime Bridge
 │   ├── qiml.py               #   Quantum-inspired ML (tensor networks, QKA)
-│   ├── superposition_thinking.py # 🆕 QUANTUM SUPERPOSITION REASONING ENGINE (QSRE)
-│   ├── superposition_moe.py   # 🆕 QUANTUM SUPERPOSITION MOE & TOKEN EMBEDDER
-│   ├── plugin_bridge.py       # 🆕 UNIVERSAL AI PLUGIN & PERSONAL SPACE VAULT
-│   ├── autonomous_decision.py # 🆕 AUTONOMOUS DECISION ENGINE & ARGON HARNESS
-│   ├── hardware_tuner.py      # 🆕 HOST HARDWARE RESOURCE AUTO-TUNER
-│   ├── deepseek_quantum_harness.py # 🆕 DEEPSEEK QUANTUM HARNESS (Q-PRM & GRPO)
+│   ├── superposition_thinking.py # QUANTUM SUPERPOSITION REASONING ENGINE (QSRE)
+│   ├── superposition_moe.py   # QUANTUM SUPERPOSITION MOE & TOKEN EMBEDDER
 │   └── __init__.py
-├── quantum_init.py            # 🆕 QUANTUM PROCESSOR REGISTRY & ENTRY POINT
-├── models/
-│   ├── quantum_voidformer.py  # 🆕 QUANTUM-ENHANCED MODEL
-│   ├── voidformer.py          #   (Legacy classical model)
-│   └── __init__.py
-├── layers/                    #   Classical transformer layers (legacy)
-├── configs/                   #   Model configurations (tiny/small/base)
-├── training/                  #   Training loops and losses
-├── datasets/                  #   Data loaders and tokenizers
-├── experiments/               #   Research scripts and analysis
-├── visualization/             #   Plotting tools
-├── utils/                     #   Config, logging, seeds
-├── tests/                     #   Unit tests
-├── main.py                    #   Dispatcher CLI
-├── train.py                   #   Training entry point
-└── infer.py                   #   Inference entry point
+qml/                            # 🆕 HYBRID QUANTUM MACHINE LEARNING (PENNYLANE)
+├── layers.py                  #   HybridNet & parameter-matched ClassicalNet
+├── backends.py                #   PennyLane device switch (default.qubit / Aer / IBM)
+├── train.py                   #   Multi-seed benchmarking script
+└── evaluate_ibm.py            #   Hardware & noisy simulator evaluation
 ```
-
-## Quickstart
-
-```bash
-# 1. Install dependencies
-pip install -r requirements.txt && pip install -e .
-
-# 2. Train quantum-enhanced model
-python train.py --config voidformer/configs/tiny.yaml --model-type quantum --steps 100
-
-# 3. Control run: train classical model on same data
-python train.py --config voidformer/configs/tiny.yaml --model-type classical --steps 100
-
-# 4. Generate text inference
-python infer.py --prompt "quantum entanglement enables" --use-quantum
-
-# 5. Evaluate checkpoint on held-out exam
-python evaluate.py --checkpoint experiments/tiny/model_latest.pt --exam-file voidformer/datasets/sample_exam.jsonl
-
-# 6. Run self-play classroom pipeline
-python classroom.py --rounds 2 --steps-per-round 10
-
-# 7. Start OpenAI-compatible FastAPI server
-python serve.py --port 8000
-
-# 5. Run quantum algorithm demo
-python -c "
-from voidformer.quantum_init import initialize_quantum_processor
-import torch
-
-# Initialize quantum processor
-processor = initialize_quantum_processor(
-    d_model=256,
-    n_qubits_per_token=4,
-    collapse_protocol='entropy_gated',
-    enable_entanglement=True
-)
-
-# Process data through quantum pipeline
-input_data = torch.randn(2, 10, 256)
-output, diagnostics = processor(input_data)
-
-print('Quantum Processing Complete!')
-print(f'Input entropy: {diagnostics[\"initial_quantum_entropy\"]:.4f}')
-print(f'Gates applied: {diagnostics[\"gates_applied\"]}')
-print(f'Entanglement: {diagnostics.get(\"is_entangled\", False)}')
-"
-```
-
-## Quantum Computing Features
-
-| Feature | Description | Status |
-|---------|-------------|--------|
-| **QSRE Reasoning Engine** | Hilbert-space parallel latent reasoning ($O(1)$ token cost) | ✅ Implemented |
-| **Qubit State Manager** | Complex state vectors `|ψ⟩` in 2^n Hilbert space | ✅ Implemented |
-| **Quantum Gates** | H, X, Y, Z, CNOT, Toffoli, Phase, T | ✅ Implemented |
-| **Entanglement** | Bell states, GHZ states, learned entanglement patterns | ✅ Implemented |
-| **Measurement** | Born rule collapse with adaptive protocols | ✅ Implemented |
-| **Quantum Circuits** | User-defined gate sequences | ✅ Implemented |
-| **Quantum Algorithms** | Grover, QFT, VQE | ✅ Implemented |
-| **Quantum Kernel Attention** | Fidelity-based attention mechanism | ✅ Implemented |
-| **Tensor Networks** | MPS/Tensor-train FFN layers | ✅ Implemented |
-| **QIML** | Quantum-inspired evolutionary optimizer | ✅ Implemented |
-| **⏰ Virtual Quantum Clock** | Temporal coherence enforcement | ✅ Implemented |
-| **📉 Decoherence Simulation** | 5 physical models (exponential, gaussian, etc.) | ✅ Implemented |
-| **⚡ Forced Collapse** | Automatic measurement at deadline | ✅ Implemented |
-
-## Host Hardware Resource Auto-Tuning
-
-The **`QuantumHardwareResourceTuner`** dynamically inspects host system specifications (CPU cores, available RAM, CUDA/GPU VRAM) and automatically configures optimal PyTorch thread allocations, statevector memory budgets, and safe maximum qubit simulation limits:
-
-```python
-from voidformer.harness import QuantumEngineeringBridge
-
-bridge = QuantumEngineeringBridge(backend_type="auto")
-config = bridge.auto_tune_hardware_resources()
-
-print(f"Host Device: {config['selected_device']}")
-print(f"Optimal Threads: {config['optimal_num_threads']}")
-print(f"Max Safe Simulated Qubits: {config['max_safe_simulated_qubits']}")
-```
-
-## DeepSeek Quantum Evaluation Harness (Q-PRM & GRPO)
-
-VoidFormer customizes the DeepSeek R1/V3 evaluation harness into a quantum-native evaluation pipeline (`harness/deepseek_quantum_harness.py`):
-
-- **`DeepSeekQuantumHarness`**: Runs multi-candidate quantum reasoning trajectory evaluations on VoidFormer models.
-- **`QuantumProcessRewardModel` (Q-PRM)**: Evaluates step-by-step reasoning trajectory quality directly on Hilbert space state vectors.
-- **`GRPOQuantumRewardNormalizer`**: Applies Group Relative Policy Optimization advantage normalization across parallel quantum reasoning pathways.
-
-```python
-from voidformer.harness.deepseek_quantum_harness import DeepSeekQuantumHarness
-from voidformer.harness import create_model
-import torch
-
-model = create_model(model_type="quantum", vocab_size=50257, d_model=256)
-harness = DeepSeekQuantumHarness(d_model=256, n_vqc_qubits=8, group_size=4)
-
-input_ids = torch.randint(0, 50257, (2, 16))
-logits, diagnostics = harness.evaluate_reasoning_task(model, input_ids)
-
-print(f"Harness Name: {diagnostics['harness_name']}")
-print(f"Group Rewards: {diagnostics['group_rewards']}")
-print(f"GRPO Advantages: {diagnostics['grpo_advantages']}")
-print(f"Best Trajectory Index: {diagnostics['selected_best_trajectory_idx']}")
-```
-
-Run via CLI:
-```bash
-python -m voidformer.harness.cli deepseek-eval
-```
-
-## Autonomous Decision Simulation Engine & Customizable Argon Harness
-
-VoidFormer includes an **Autonomous Quantum Decision Simulation Engine** and **Customizable Argon Harness**:
-
-- **`QuantumAutonomousDecisionEngine`**: Evaluates $N = 2^n$ decision pathways simultaneously in Hilbert superposition. Uses Grover-inspired quantum oracle reflections and constructive wave interference to amplify optimal solution states with minimal token usage.
-- **`CustomizableQuantumHarness`**: Universal Argon-inspired harness adaptable to any task, domain, or software scenario (e.g. business idea feasibility analysis, complex code generation, system design optimization).
-
-```python
-import torch
-from voidformer.quantum.autonomous_decision import (
-    QuantumAutonomousDecisionEngine,
-    CustomizableQuantumHarness,
-)
-
-# 1. Initialize Customizable Quantum Harness for any domain or software task
-harness = CustomizableQuantumHarness(
-    d_model=256,
-    n_vqc_qubits=8,  # Simulates 2^8 = 256 decision trajectories in parallel
-    domain_name="business_and_coding_genius"
-)
-
-# 2. Define custom domain evaluator function (e.g., feasibility / quality score)
-def custom_business_evaluator(probs: torch.Tensor) -> torch.Tensor:
-    return torch.sigmoid(probs.mean(dim=-1, keepdim=True))
-
-# 3. Simulate all outcomes simultaneously in superposition
-input_data = torch.randn(2, 16, 256)
-optimal_solution, diagnostics = harness.simulate_task(
-    input_data,
-    custom_domain_evaluator=custom_business_evaluator
-)
-
-print(f"Simulated Trajectories: {diagnostics['num_simulated_trajectories']}")
-print(f"Amplification Iterations: {diagnostics['amplification_iterations']}")
-```
-
-## Universal Quantum AI Plugin & Personal Space Data Protection Vault
-
-VoidFormer acts as a universal bridge connecting any external AI model (PyTorch modules, HuggingFace transformers) to quantum superposition space:
-
-- **`QuantumVoidFormerAIPlugin`**: Plug-and-play wrapper that brings QSRE, qubit space rotation, and quantum space execution to any AI model.
-- **`QuantumPersonalSpaceVault`**: Encrypts classical data via non-invertible quantum phase transformations $\vert \psi_{\text{protected}} \rangle = e^{\mathrm{i}\phi_{\text{vault}}} \vert \psi \rangle$ in VoidFormer's personal superposition space, protecting input data privacy while preserving Hilbert space inner products.
-- **`QuantumEngineeringBridge`**: Hardware bridge with QPU auto-detection. Automatically uses physical IBM Quantum QPU hardware if available, and seamlessly falls back to virtual PyTorch statevector simulation.
-
-```python
-import torch
-import torch.nn as nn
-from voidformer.quantum.plugin_bridge import QuantumVoidFormerAIPlugin
-from voidformer.harness.quantum_bridge import QuantumEngineeringBridge
-
-# 1. Any existing PyTorch / LLM model layer
-base_ai_model = nn.Sequential(nn.Linear(256, 512), nn.GELU(), nn.Linear(512, 256))
-
-# 2. Wrap model with QuantumVoidFormerAIPlugin
-quantum_plugin = QuantumVoidFormerAIPlugin(
-    base_ai_model=base_ai_model,
-    d_model=256,
-    n_vqc_qubits=8,
-    thinking_steps=4,
-    enable_data_vault=True  # Enables Quantum Personal Space Data Vault
-)
-
-# 3. Process data in protected quantum space
-input_tensor = torch.randn(2, 16, 256)
-output = quantum_plugin(input_tensor)
-
-# 4. Auto-detecting Quantum Engineering Bridge (Physical QPU or Virtual Fallback)
-bridge = QuantumEngineeringBridge(backend_type="auto")
-print(f"Active Quantum Backend: {bridge.active_backend}")
-```
-
-## Quantum Superposition MoE & Quantum Tokenization
-
-Inspired by Argon-style quantum state architectures, VoidFormer supports **Quantum Superposition Tokenization** and **Quantum Superposition Mixture of Experts (MoE)**:
-
-- **`QuantumSuperpositionTokenEmbedder`**: Converts discrete token IDs directly into complex amplitude distributions $\vert \psi_{\text{token}} \rangle = \sum \alpha_i \vert i \rangle \in \mathbb{C}^{2^n}$ in Hilbert space.
-- **`QuantumSuperpositionRouter`**: Routes quantum states to experts based on quantum state fidelity overlap $K(x, e_j) = \vert \langle \psi(x) \vert \psi(e_j) \rangle \vert^2$.
-- **`QuantumSuperpositionMoE`**: Decomposes complex reasoning tasks into parallel sub-tasks across multiple Quantum Experts operating in Hilbert space with minimal token usage.
-
-```python
-from voidformer.quantum.superposition_moe import (
-    QuantumSuperpositionTokenEmbedder,
-    QuantumSuperpositionMoE,
-)
-from voidformer.models import QuantumVoidFormer
-
-model = QuantumVoidFormer(
-    vocab_size=50257,
-    d_model=256,
-    n_vqc_qubits=8,
-    use_superposition_thinking=True,
-    thinking_steps=4,
-    use_quantum_moe=True,
-    num_experts=4,
-    top_k_experts=2,
-    use_quantum_token_embedder=True,
-)
-```
-
-## Quantum Superposition Reasoning Engine (QSRE)
-
-The **Quantum Superposition Reasoning Engine (QSRE)** is a Hilbert-space latent reasoning framework integrated into **VoidFormer**.
-
-Traditional classical reasoning (like Chain-of-Thought) requires generating hundreds of intermediate text tokens sequentially ($O(N)$ token cost). **QSRE replaces classical token-by-token text generation with parallel state evolution in $2^n$-dimensional Hilbert space**.
-
-$$\vert \Psi_{\text{prompt}} \rangle \xrightarrow{\quad \text{Unitary Evolution } U(\theta) \quad} \vert \Psi_{\text{thinking}}^{(k)} \rangle \xrightarrow{\quad \text{Constructive Interference} \quad} \vert \Psi_{\text{solution}} \rangle \xrightarrow{\quad \text{Born Measurement} \quad} \text{Chat Tokens}$$
-
-### Core Modular Components (`quantum/superposition_thinking.py`)
-
-1. **`QuantumHilbertMemory`**: Maps input token embeddings into a complex amplitude state vector $|\Psi_0\rangle = \sum_{i=0}^{2^n-1} \alpha_i |i\rangle$ where $\sum |\alpha_i|^2 = 1$. Stores structural contextual relationships in quantum state phases.
-2. **`UnitaryThinkingLoop`**: Executes $K$ latent thinking cycles using parameterized phase rotations $R_X(\theta), R_Y(\theta), R_Z(\theta)$ with zero classical token generation cost.
-3. **`QuantumAmplitudeOracle`**: Latent quality filter that shifts phase and amplifies valid reasoning trajectories via constructive wave interference while suppressing flawed paths.
-4. **`SuperposedBornDecoder`**: Applies Born-rule collapse $P(i) = |\alpha_i|^2$ to project the high-density quantum state back into classical embedding space for output text generation.
-
-### Example Usage
-
-```python
-import torch
-from voidformer.quantum.superposition_thinking import QuantumSuperpositionReasoningEngine
-from voidformer.models import QuantumVoidFormer
-
-# Initialize QSRE standalone
-qsre = QuantumSuperpositionReasoningEngine(
-    d_model=256,
-    n_vqc_qubits=8,
-    thinking_steps=4
-)
-x = torch.randn(2, 16, 256, requires_grad=True)
-thought_enhanced_x = qsre(x)
-
-# Instantiate QuantumVoidFormer with QSRE enabled
-model = QuantumVoidFormer(
-    vocab_size=50257,
-    d_model=256,
-    n_vqc_qubits=8,
-    use_superposition_thinking=True,
-    thinking_steps=4
-)
-```
-
-## Temporal Coherence System
-
-The system includes a **Virtual Quantum Clock** that enforces realistic time-based quantum decoherence:
-
-### Coherence Windows
-```python
-from voidformer.quantum.temporal_coherence import create_time_aware_processor
-
-# Create processor with 500ms coherence window
-processor = create_time_aware_processor(
-    base_processor,
-    coherence_time_ms=500,      # Quantum coherence lifetime
-    virtual_ticks=2000,          # Maximum operations allowed
-    decoherence_model="exponential",
-    noise_temp=0.01,
-)
-
-# Process with temporal enforcement
-output, diagnostics = processor(data, log_temporal_evolution=True)
-
-# Check temporal evolution
-for step in diagnostics["temporal_evolution"]:
-    print(f"Phase: {step['phase']}")
-    print(f"  Time: {step['virtual_time_elapsed']*1000:.1f} ms")
-    print(f"  Fidelity: {step['current_fidelity']:.4f}")
-    print(f"  Decoherence: D(t)={step['decoherence_metrics']['decoherence_factor']:.4f}")
-```
-
-### Decoherence Models
-
-| Model | Physics | Formula |
-|-------|---------|---------|
-| **Exponential** | Random phase accumulation | D(t) = e^(-t/T₂*) |
-| **Gaussian** | Quasi-static noise | D(t) = e^(-(t/T₂*)²) |
-| **Power Law** | 1/f noise | D(t) = (1 + t/T₂*)^(-α) |
-| **Linear** | Constant decay | D(t) = 1 - t/T_coherence |
-| **Amplitude Damping** | Energy relaxation | D(t) = √(e^(-t/T₁)) |
-
-### Forced Collapse
-
-When coherence time expires, the system automatically forces measurement:
-
-```python
-if diagnostics["forced_collapse"]:
-    print(f"⚠️  Forced collapse occurred!")
-    print(f"Reason: {diagnostics['forced_measurement_reason']}")
-    print(f"Time: {diagnostics['final_status']['virtual_time_elapsed']*1000:.1f} ms")
-    print(f"Final fidelity: {diagnostics['final_status']['current_fidelity']:.4f}")
-```
-
-**Forced collapse triggers**:
-- Time budget exhausted (t ≥ T_coherence)
-- Fidelity too low (F < 0.1)
-- Virtual tick budget exhausted
-
-## Measurement Collapse Protocols
-
-| Protocol | Behavior | Use Case |
-|----------|----------|----------|
-| `hard` | Full Born rule sampling → single basis state | Final output, deterministic tasks |
-| `soft` | Probability-weighted mixture | Intermediate layers, gradient flow |
-| `expectation` | Expectation value ⟨ψ\|O\|ψ⟩ | Analysis, no collapse needed |
-| `deferred` | No collapse, keep quantum | Chained quantum operations |
-| `entropy_gated` | Adaptive: high entropy→soft, low→hard | Default, uncertainty-aware |
-
-## Quantum Algorithms
-
-The system supports executing quantum algorithms on neural network embeddings:
-
-```python
-from voidformer.quantum import QuantumAlgorithm
-from voidformer.models import QuantumVoidFormer
-
-model = QuantumVoidFormer(vocab_size=50000, d_model=512, n_qubits_per_token=5)
-
-# Run Grover's search algorithm
-output = model.forward(
-    tokens,
-    quantum_algorithm=QuantumAlgorithm.GROVER_SEARCH
-)
-
-# Run Quantum Fourier Transform
-output = model.forward(
-    tokens,
-    quantum_algorithm=QuantumAlgorithm.QUANTUM_FOURIER_TRANSFORM
-)
-```
-
-## Mathematical Foundations
-
-### Quantum State Representation
-
-Every token embedding is mapped to a quantum state vector in Hilbert space:
-
-```
-|ψ⟩ = Σᵢ αᵢ|i⟩    where αᵢ ∈ ℂ, Σ|αᵢ|² = 1
-```
-
-Properties:
-- **Superposition**: State exists in multiple basis states simultaneously
-- **Normalization**: Total probability = 1 (unitary evolution)
-- **Phase**: Complex phases enable quantum interference
-
-### Quantum Gates (Unitary Operators)
-
-All gates preserve norm: `U†U = I`
-
-**Hadamard** (creates equal superposition):
-```
-H = 1/√2 [[1,  1],
-          [1, -1]]
-
-H|0⟩ = (|0⟩ + |1⟩)/√2
-```
-
-**CNOT** (creates entanglement):
-```
-CNOT = [[1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, 0, 1],
-        [0, 0, 1, 0]]
-
-CNOT·(H⊗I)|00⟩ = (|00⟩ + |11⟩)/√2  (Bell state)
-```
-
-**Pauli Gates** (rotations):
-```
-X = [[0, 1],     Y = [[0, -i],     Z = [[1,  0],
-     [1, 0]]          [i,  0]]          [0, -1]]
-```
-
-### Quantum Measurement
-
-**Born Rule**: Measurement outcome probability
-```
-P(measuring state |i⟩) = |⟨i|ψ⟩|² = |αᵢ|²
-```
-
-Post-measurement state collapse:
-```
-|ψ⟩ = Σᵢ αᵢ|i⟩  →  |i_measured⟩  with probability |αᵢ|²
-```
-
-### Entanglement Measures
-
-**Von Neumann Entropy** (for pure states):
-```
-S = -Tr(ρ log ρ) = -Σᵢ pᵢ log pᵢ
-```
-
-**Concurrence** (2-qubit entanglement):
-```
-C = 2|α₀α₃ - α₁α₂|  ∈ [0, 1]
-```
-- C = 0: separable (no entanglement)
-- C = 1: maximally entangled (Bell state)
-
-### Quantum Kernel Attention
-
-Replace softmax attention with quantum fidelity:
-```
-K(x, y) = |⟨ψ(x)|ψ(y)⟩|²
-
-where ψ: ℝ^d → ℂ^(2^n) embeds classical to quantum
-```
-
-Attention weights based on quantum state overlap (interference patterns).
-
-### Tensor Network Decomposition
-
-Matrix Product State representation:
-```
-W = Σ A₁(i₁) A₂(i₂) ... Aₙ(iₙ)
-```
-
-where each Aₖ has shape `(bond_dim, local_dim, bond_dim)`.
-
-Compression ratio: `d_in × d_out / (n_cores × bond_dim²)`
-
-See `notebooks/voidformer_math.md` for complete derivations.
 
 ## Citation
 
@@ -606,11 +111,3 @@ See `notebooks/voidformer_math.md` for complete derivations.
   note   = {Quantum superposition, entanglement, and measurement-based neural architecture}
 }
 ```
-
----
-
-## Legacy Classical VoidFormer
-
-The original dual-state classical VoidFormer (quantum-inspired but not true quantum computing)
-is preserved in `models/voidformer.py` and `layers/` for comparison. The quantum-enhanced
-version in `models/quantum_voidformer.py` represents the full quantum computing transformation.
