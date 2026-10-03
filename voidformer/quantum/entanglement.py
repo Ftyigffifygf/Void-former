@@ -241,38 +241,40 @@ class EntanglementManager(nn.Module):
 
         Performs direct 2-qubit CNOT / Controlled-Phase interactions between qubit 0 of token i
         and qubit 0 of token j, creating genuine non-local quantum state entanglement
-        specifically between token i and token j.
+        specifically between token i and token j while preserving full state_dim tensor shape.
         """
         B, T, state_dim = state.amplitudes.shape
-        amps = state.amplitudes.clone()
+        if state_dim < 4:
+            return state
+
+        s = entanglement_strength
         CNOT = self.gate_registry.get_gate("CNOT")
+        U = CNOT.matrix(state.amplitudes.device, state.amplitudes.dtype)
+
+        token_states = list(state.amplitudes.unbind(dim=1))  # T tensors of (B, state_dim)
 
         for (i, j) in token_pairs:
             if i >= T or j >= T or i == j:
                 continue
+            joint = torch.stack(
+                [token_states[i][:, 0], token_states[i][:, 1],
+                 token_states[j][:, 0], token_states[j][:, 1]],
+                dim=-1,
+            )  # (B, 4)
+            ent = torch.matmul(joint, U.mT)  # (B, 4)
+            mixed = (1 - s) * joint + s * ent
 
-            # Construct joint 2-token quantum state (B, 4) for (token_i, token_j) qubit 0
-            # For 2-qubit representations per token, apply CNOT entangling matrix
-            # |psi_{i,j}> -> CNOT |psi_{i,j}>
-            joint_dim = min(4, state_dim)
-            if joint_dim == 4:
-                joint_amps = torch.stack([
-                    amps[:, i, 0], amps[:, i, 1],
-                    amps[:, j, 0], amps[:, j, 1]
-                ], dim=-1)  # (B, 4)
+            # Keep untouched amplitudes so every token stays (B, state_dim)
+            if state_dim > 2:
+                token_states[i] = torch.cat([mixed[:, :2], token_states[i][:, 2:]], dim=-1)
+                token_states[j] = torch.cat([mixed[:, 2:], token_states[j][:, 2:]], dim=-1)
+            else:
+                token_states[i] = mixed[:, :2]
+                token_states[j] = mixed[:, 2:]
 
-                # CNOT matrix @ joint_amps (ensure same device as amps)
-                U_cnot = CNOT.matrix(amps.device, amps.dtype)
-                entangled_joint = torch.matmul(joint_amps, U_cnot.mT)  # (B, 4)
-
-                # Apply entanglement weighted by strength
-                amps[:, i, 0] = (1 - entanglement_strength) * amps[:, i, 0] + entanglement_strength * entangled_joint[:, 0]
-                amps[:, i, 1] = (1 - entanglement_strength) * amps[:, i, 1] + entanglement_strength * entangled_joint[:, 1]
-                amps[:, j, 0] = (1 - entanglement_strength) * amps[:, j, 0] + entanglement_strength * entangled_joint[:, 2]
-                amps[:, j, 1] = (1 - entanglement_strength) * amps[:, j, 1] + entanglement_strength * entangled_joint[:, 3]
-
+        new_amps = torch.stack(token_states, dim=1)  # (B, T, state_dim)
         return QuantumStateVector(
-            amplitudes=amps,
+            amplitudes=new_amps,
             n_qubits=state.n_qubits,
             global_phase=state.global_phase,
         ).normalize()
