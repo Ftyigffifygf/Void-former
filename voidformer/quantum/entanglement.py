@@ -261,8 +261,8 @@ class EntanglementManager(nn.Module):
                     amps[:, j, 0], amps[:, j, 1]
                 ], dim=-1)  # (B, 4)
 
-                # CNOT matrix @ joint_amps
-                U_cnot = CNOT.matrix(self.device, amps.dtype)
+                # CNOT matrix @ joint_amps (ensure same device as amps)
+                U_cnot = CNOT.matrix(amps.device, amps.dtype)
                 entangled_joint = torch.matmul(joint_amps, U_cnot.mT)  # (B, 4)
 
                 # Apply entanglement weighted by strength
@@ -326,7 +326,7 @@ class EntanglementManager(nn.Module):
         T = state.amplitudes.shape[1]
 
         causal_mask = torch.triu(
-            torch.ones(T, T, device=self.device, dtype=torch.bool),
+            torch.ones(T, T, device=state.amplitudes.device, dtype=torch.bool),
             diagonal=1,
         )
 
