@@ -5,7 +5,12 @@ import pytest
 import numpy as np
 import torch
 
-from voidformer.quantum.ibm_backend import IBMBackend, build_circuit, save_account
+from voidformer.quantum.ibm_backend import (
+    IBMBackend,
+    build_circuit,
+    save_account,
+    get_qc_for_n_qubit_GHZ_state,
+)
 from voidformer.quantum_init import get_backend
 
 
@@ -14,6 +19,11 @@ def test_build_circuit():
     qc = build_circuit(n_qubits=2, ops=ops, measure=True)
     assert qc.num_qubits == 2
     assert qc.num_clbits == 2
+
+
+def test_get_qc_for_n_qubit_GHZ_state():
+    qc = get_qc_for_n_qubit_GHZ_state(4)
+    assert qc.num_qubits == 4
 
 
 def test_save_account():
@@ -43,6 +53,15 @@ def test_ibm_backend_probabilities():
     assert isinstance(probs, np.ndarray)
     assert len(probs) == 4
     assert pytest.approx(probs.sum(), abs=1e-5) == 1.0
+
+
+def test_ibm_backend_expectation_values():
+    backend = IBMBackend(use_simulator=True, shots=1000)
+    bell_ops = [("h", 0), ("cx", 0, 1)]
+    evs = backend.expectation_values(bell_ops, observables_labels=["ZZ", "IZ"], n_qubits=2)
+    assert isinstance(evs, np.ndarray)
+    assert len(evs) == 2
+    assert pytest.approx(evs[0], abs=0.1) == 1.0
 
 
 def test_get_backend_factory():
