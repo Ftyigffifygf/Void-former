@@ -1,8 +1,0 @@
-{
-  "requested_backend_kind": "ibm_aer",
-  "actual_backend_name": "qiskit.aer",
-  "n_samples": 20,
-  "shots": 1024,
-  "loss": 0.6892335653305054,
-  "accuracy": 0.6
-}

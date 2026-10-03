@@ -1,7 +1,8 @@
 """IBM Quantum bridge for VoidFormer.
 
 Converts a simple gate list into a Qiskit circuit and runs it either on a local simulator
-(no account needed) or on real IBM Quantum hardware.
+(no account needed) or on real IBM Quantum hardware. Supports sampling (SamplerV2)
+and expectation values (EstimatorV2) across observables and GHZ states.
 
 Gate list format (qubit 0 first):
     ("h", 0)
@@ -20,12 +21,57 @@ Bitstring convention:
 from __future__ import annotations
 
 import os
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
 _ONE_QUBIT = {"h", "x", "y", "z", "s", "t"}
 _ROTATIONS = {"rx", "ry", "rz", "p"}
+
+
+def save_account(
+    token: str,
+    instance: Optional[str] = None,
+    channel: str = "ibm_quantum_platform",
+    overwrite: bool = True,
+):
+    """Save IBM Quantum account credentials locally.
+
+    Args:
+        token: 44-character API token from IBM Quantum Platform
+        instance: Optional CRN or hub/group/project instance string
+        channel: Authentication channel, default 'ibm_quantum_platform'
+        overwrite: Whether to overwrite existing saved account
+    """
+    from qiskit_ibm_runtime import QiskitRuntimeService
+
+    kwargs = {"token": token, "channel": channel, "overwrite": overwrite}
+    if instance:
+        kwargs["instance"] = instance
+
+    QiskitRuntimeService.save_account(**kwargs)
+    print("Successfully saved IBM Quantum account credentials.")
+
+
+def get_qc_for_n_qubit_GHZ_state(n: int):
+    """Create a qiskit.QuantumCircuit for an n-qubit GHZ state.
+
+    Args:
+        n (int): Number of qubits (>= 2)
+
+    Returns:
+        QuantumCircuit: Circuit generating the GHZ state
+    """
+    from qiskit import QuantumCircuit
+
+    if not isinstance(n, int) or n < 2:
+        raise ValueError(f"n must be an integer >= 2, got {n}")
+
+    qc = QuantumCircuit(n)
+    qc.h(0)
+    for i in range(n - 1):
+        qc.cx(i, i + 1)
+    return qc
 
 
 def build_circuit(n_qubits: int, ops: Sequence[tuple], measure: bool = True):
@@ -127,6 +173,58 @@ class IBMBackend:
             probs[int(bits.replace(" ", ""), 2)] = c / total
         return probs
 
+    def expectation_values(
+        self,
+        circuit_or_ops: Union[Any, Sequence[tuple]],
+        observables_labels: Sequence[str],
+        n_qubits: Optional[int] = None,
+        resilience_level: int = 1,
+    ) -> np.ndarray:
+        """Compute expectation values of observables using Qiskit EstimatorV2.
+
+        Args:
+            circuit_or_ops: A Qiskit QuantumCircuit or sequence of gate tuples.
+            observables_labels: List of Pauli strings e.g. ["IZ", "IX", "ZZ"]
+            n_qubits: Number of qubits (inferred from circuit if not provided)
+            resilience_level: Error mitigation resilience level
+
+        Returns:
+            np.ndarray of expectation values for each observable
+        """
+        from qiskit import QuantumCircuit
+        from qiskit.quantum_info import SparsePauliOp
+        from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+        from qiskit_ibm_runtime import EstimatorV2 as Estimator
+
+        if isinstance(circuit_or_ops, QuantumCircuit):
+            qc = circuit_or_ops
+            n_qubits = qc.num_qubits
+        else:
+            if n_qubits is None:
+                raise ValueError("n_qubits must be specified when passing gate tuples")
+            qc = build_circuit(n_qubits, circuit_or_ops, measure=False)
+
+        backend = self._get_backend()
+        pm = generate_preset_pass_manager(backend=backend, optimization_level=1)
+        isa_circuit = pm.run(qc)
+
+        observables = [SparsePauliOp(label) for label in observables_labels]
+        mapped_observables = [
+            op.apply_layout(isa_circuit.layout) for op in observables
+        ]
+
+        estimator = Estimator(mode=backend)
+        if hasattr(estimator, "options"):
+            try:
+                estimator.options.default_shots = self.shots
+                estimator.options.resilience_level = resilience_level
+            except AttributeError:
+                pass
+
+        job = estimator.run([(isa_circuit, mapped_observables)])
+        pub_result = job.result()[0]
+        return pub_result.data.evs
+
 
 IBMQuantumBackend = IBMBackend
 
@@ -135,3 +233,4 @@ if __name__ == "__main__":
     bell = [("h", 0), ("cx", 0, 1)]
     sim = IBMBackend(use_simulator=True)
     print("Simulator Bell probabilities:", sim.probabilities(2, bell))
+    print("Simulator Bell expectation values [ZZ, IZ]:", sim.expectation_values(bell, ["ZZ", "IZ"], n_qubits=2))
