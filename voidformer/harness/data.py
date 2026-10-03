@@ -31,8 +31,7 @@ class SyntheticDataset(Dataset):
 
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         x = self.data[idx]
-        y = torch.roll(x, -1, dims=0)
-        return {"input_ids": x, "labels": y}
+        return {"input_ids": x, "targets": x, "labels": x}
 
 
 def create_dataloader(

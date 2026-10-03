@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from quantum.hardware_tuner import QuantumHardwareResourceTuner
-from harness.quantum_bridge import QuantumEngineeringBridge
+from voidformer.quantum.hardware_tuner import QuantumHardwareResourceTuner
+from voidformer.harness.quantum_bridge import QuantumEngineeringBridge
 
 
 def test_system_specs_inspection():

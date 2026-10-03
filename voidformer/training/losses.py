@@ -12,12 +12,11 @@ Total loss:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from ..models import VoidFormerOutput
 
 
 @dataclass
@@ -42,16 +41,15 @@ class VoidFormerLosses(nn.Module):
 
     def forward(
         self,
-        out: VoidFormerOutput,
+        out: Any,
         targets: torch.Tensor,
         embedding_weight: torch.Tensor,
     ) -> tuple[torch.Tensor, dict]:
-        # A. Language modelling
+        # A. Language modelling (shift targets internally)
         logits = out.logits[:, :-1, :].contiguous()
         tgt = targets[:, 1:].contiguous()
         l_lm = F.cross_entropy(logits.reshape(-1, logits.size(-1)), tgt.reshape(-1))
 
-        n_layers = max(len(out.diagnostics), 1)
         device = l_lm.device
 
         l_ent = torch.tensor(0.0, device=device)
@@ -59,21 +57,25 @@ class VoidFormerLosses(nn.Module):
         l_col = torch.tensor(0.0, device=device)
         l_int = torch.tensor(0.0, device=device)
 
-        for i, d in enumerate(out.diagnostics):
-            depth = (i + 1) / n_layers
-            ent = d["void_entropy"].mean()
-            tau = d["tau"]
-            coefs = d["coefs"]
+        diagnostics_list = getattr(out, "layer_diagnostics", None) or getattr(out, "diagnostics", [])
+        n_layers = max(len(diagnostics_list), 1)
 
-            # B. Entropy preservation: encourage HIGH entropy early
-            l_ent = l_ent + (1.0 - depth) * (-ent)
-            # F. Ambiguity retention: penalise τ in early layers
-            l_amb = l_amb + (1.0 - depth) * tau.mean()
-            # D. Collapse regularisation: pull τ away from 0.5 in mid-layers
-            mid_w = 1.0 - abs(depth - 0.5) * 2.0
-            l_col = l_col + mid_w * ((tau - 0.5) ** 2).mean()
-            # E. Interference stability: bound coefficient magnitudes
-            l_int = l_int + coefs.pow(2).mean()
+        for i, d in enumerate(diagnostics_list):
+            depth = (i + 1) / n_layers
+            if isinstance(d, dict) and "void_entropy" in d and "tau" in d and "coefs" in d:
+                ent = d["void_entropy"].mean()
+                tau = d["tau"]
+                coefs = d["coefs"]
+
+                # B. Entropy preservation
+                l_ent = l_ent + (1.0 - depth) * (-ent)
+                # F. Ambiguity retention
+                l_amb = l_amb + (1.0 - depth) * tau.mean()
+                # D. Collapse regularisation
+                mid_w = 1.0 - abs(depth - 0.5) * 2.0
+                l_col = l_col + mid_w * ((tau - 0.5) ** 2).mean()
+                # E. Interference stability
+                l_int = l_int + coefs.pow(2).mean()
 
         l_ent = l_ent / n_layers
         l_amb = l_amb / n_layers
@@ -81,22 +83,23 @@ class VoidFormerLosses(nn.Module):
         l_int = l_int / n_layers
 
         # C. Semantic consistency
-        with torch.no_grad():
-            pred = logits.argmax(dim=-1)                                  # (B, T-1)
-        emb = F.embedding(pred, embedding_weight)                          # (B, T-1, d)
-        hidden = out.classical_states[:, :-1, :]
-        l_sem = 1.0 - F.cosine_similarity(hidden, emb, dim=-1).mean()
+        classical_states = getattr(out, "classical_output", getattr(out, "classical_states", None))
+        if classical_states is not None and classical_states.shape[1] > 1:
+            with torch.no_grad():
+                pred = logits.argmax(dim=-1)                                  # (B, T-1)
+            emb = F.embedding(pred, embedding_weight)                          # (B, T-1, d)
+            hidden = classical_states[:, :-1, :]
+            l_sem = 1.0 - F.cosine_similarity(hidden, emb, dim=-1).mean()
+        else:
+            l_sem = torch.tensor(0.0, device=device)
 
         # G. Riemannian geodesic regulariser
-        #   d(I, U) = ∫₀¹ √( Σ_ij I_ij ẋⁱ ẋʲ ) dt
-        # We softly pull the per-token path length toward `geodesic_target`
-        # while penalising path-length variance across tokens (manifold flow
-        # should be smooth across the sequence).
         l_geo = torch.tensor(0.0, device=device)
-        if out.geodesic_distance is not None:
-            gd = out.geodesic_distance                                     # (B, T)
-            tgt = float(self.w.geodesic_target)
-            l_geo = ((gd - tgt) ** 2).mean() + 0.1 * gd.var(dim=1).mean()
+        geodesic_dist = getattr(out, "geodesic_distance", None)
+        if geodesic_dist is not None:
+            gd = geodesic_dist                                              # (B, T)
+            tgt_val = float(self.w.geodesic_target)
+            l_geo = ((gd - tgt_val) ** 2).mean() + 0.1 * gd.var(dim=1).mean()
 
         total = (
             l_lm

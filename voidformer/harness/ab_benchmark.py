@@ -9,9 +9,9 @@ repo_root = Path(__file__).parent.parent.resolve()
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
-from harness.model_factory import create_model
-from harness.data import create_dataloader
-from harness.train_loop import train_model
+from voidformer.harness.model_factory import create_model
+from voidformer.harness.data import create_dataloader
+from voidformer.harness.train_loop import train_model
 
 
 def run_ab_benchmark(steps: int = 10, batch_size: int = 4, seq_len: int = 32) -> dict:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from quantum.superposition_thinking import (
+from voidformer.quantum.superposition_thinking import (
     QuantumHilbertMemory,
     UnitaryThinkingLoop,
     QuantumAmplitudeOracle,

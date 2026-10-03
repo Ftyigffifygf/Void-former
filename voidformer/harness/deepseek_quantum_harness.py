@@ -13,12 +13,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-try:
-    from quantum.superposition_thinking import QuantumHilbertMemory
-    from quantum.autonomous_decision import QuantumAutonomousDecisionEngine
-except ImportError:
-    from voidformer.quantum.superposition_thinking import QuantumHilbertMemory
-    from voidformer.quantum.autonomous_decision import QuantumAutonomousDecisionEngine
+from voidformer.quantum.superposition_thinking import QuantumHilbertMemory
+from voidformer.quantum.autonomous_decision import QuantumAutonomousDecisionEngine
 
 
 class QuantumProcessRewardModel(nn.Module):

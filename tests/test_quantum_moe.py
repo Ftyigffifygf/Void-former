@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import torch
 
-from quantum.superposition_moe import (
+from voidformer.quantum.superposition_moe import (
     QuantumSuperpositionTokenEmbedder,
     QuantumSuperpositionExpert,
     QuantumSuperpositionRouter,
     QuantumSuperpositionMoE,
 )
 from voidformer.models.quantum_voidformer import QuantumVoidFormer
-from harness.model_factory import create_model
+from voidformer.harness.model_factory import create_model
 
 
 def test_quantum_superposition_token_embedder():

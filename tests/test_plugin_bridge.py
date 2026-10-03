@@ -5,11 +5,11 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
-from quantum.plugin_bridge import (
+from voidformer.quantum.plugin_bridge import (
     QuantumPersonalSpaceVault,
     QuantumVoidFormerAIPlugin,
 )
-from harness.quantum_bridge import QuantumEngineeringBridge
+from voidformer.harness.quantum_bridge import QuantumEngineeringBridge
 
 
 def test_quantum_personal_space_vault():

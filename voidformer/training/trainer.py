@@ -5,20 +5,19 @@ from __future__ import annotations
 import math
 import os
 import time
-from typing import Iterable
+from typing import Iterable, Any
 
 import torch
 import torch.nn as nn
 
-from ..models import VoidFormerModel
-from ..utils.logging import get_logger
+from voidformer.utils.logging import get_logger
 from .losses import VoidFormerLosses
 
 
 class Trainer:
     def __init__(
         self,
-        model: VoidFormerModel,
+        model: nn.Module,
         loss_fn: VoidFormerLosses,
         train_loader: Iterable,
         cfg: dict,
@@ -40,7 +39,7 @@ class Trainer:
         self.grad_clip = t.get("grad_clip", 1.0)
         self.log_every = t.get("log_every", 50)
         self.amp = bool(t.get("amp", False)) and self.device.type == "cuda"
-        self.scaler = torch.cuda.amp.GradScaler(enabled=self.amp)
+        self.scaler = torch.amp.GradScaler('cuda', enabled=self.amp) if hasattr(torch.amp, "GradScaler") else torch.cuda.amp.GradScaler(enabled=self.amp)
         self.log = get_logger("voidformer.train")
 
         self.tb = None
@@ -68,7 +67,13 @@ class Trainer:
 
     def fit(self, max_steps: int | None = None) -> dict:
         steps = max_steps or self.total_steps
-        emb_w = self.model.embed.classical_emb.weight
+        if hasattr(self.model, "embedding"):
+            emb_w = self.model.embedding.weight
+        elif hasattr(self.model, "embed"):
+            emb_w = self.model.embed.classical_emb.weight
+        else:
+            emb_w = next(self.model.parameters())
+
         self.model.train()
         step = 0
         t0 = time.time()
@@ -81,15 +86,14 @@ class Trainer:
                 loader_iter = iter(self.train_loader)
                 batch = next(loader_iter)
             ids = batch["input_ids"].to(self.device)
-            tgt = batch.get("targets", ids).to(self.device)
+            tgt = batch.get("targets", batch.get("labels", ids)).to(self.device)
 
             for g in self.optim.param_groups:
                 g["lr"] = self._lr_at(step)
 
             self.optim.zero_grad(set_to_none=True)
-            with torch.cuda.amp.autocast(enabled=self.amp):
-                out = self.model(ids, return_diagnostics=True)
-                loss, log = self.loss_fn(out, tgt, emb_w)
+            out = self.model(ids, return_diagnostics=True)
+            loss, log = self.loss_fn(out, tgt, emb_w)
 
             if self.amp:
                 self.scaler.scale(loss).backward()

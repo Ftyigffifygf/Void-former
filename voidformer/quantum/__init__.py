@@ -17,6 +17,9 @@ from .quantum_gates import (
     TGate,
     ToffoliGate,
     ControlledPhaseGate,
+    RXGate,
+    RYGate,
+    RZGate,
 )
 from .backend_integration import BackendIntegration
 from .vqc_layer import VQCLayer, VQCAutogradFunction, execute_vqc, compute_shot_expectation_and_variance
@@ -73,6 +76,9 @@ __all__ = [
     "TGate",
     "ToffoliGate",
     "ControlledPhaseGate",
+    "RXGate",
+    "RYGate",
+    "RZGate",
     "BackendIntegration",
     "VQCLayer",
     "VQCAutogradFunction",

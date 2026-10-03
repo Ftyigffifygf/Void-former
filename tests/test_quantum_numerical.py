@@ -13,7 +13,7 @@ import pytest
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 
-from quantum import (
+from voidformer.quantum import (
     QuantumStateVector,
     HadamardGate,
     CNOTGate,
@@ -28,7 +28,7 @@ from quantum import (
 
 def test_rotation_gates_numerical():
     """Verify RX, RY, RZ gate matrix unitarity and state rotation."""
-    from quantum import RXGate, RYGate, RZGate, QuantumCircuit, BackendIntegration
+    from voidformer.quantum import RXGate, RYGate, RZGate, QuantumCircuit, BackendIntegration
 
     for gate_cls in (RXGate, RYGate, RZGate):
         gate = gate_cls(theta=math.pi / 3)
