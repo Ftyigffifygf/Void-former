@@ -28,6 +28,30 @@ _ONE_QUBIT = {"h", "x", "y", "z", "s", "t"}
 _ROTATIONS = {"rx", "ry", "rz", "p"}
 
 
+def save_account(
+    token: str,
+    instance: Optional[str] = None,
+    channel: str = "ibm_quantum_platform",
+    overwrite: bool = True,
+):
+    """Save IBM Quantum account credentials locally.
+
+    Args:
+        token: 44-character API token from IBM Quantum Platform
+        instance: Optional CRN or hub/group/project instance string
+        channel: Authentication channel, default 'ibm_quantum_platform'
+        overwrite: Whether to overwrite existing saved account
+    """
+    from qiskit_ibm_runtime import QiskitRuntimeService
+
+    kwargs = {"token": token, "channel": channel, "overwrite": overwrite}
+    if instance:
+        kwargs["instance"] = instance
+
+    QiskitRuntimeService.save_account(**kwargs)
+    print("Successfully saved IBM Quantum account credentials.")
+
+
 def build_circuit(n_qubits: int, ops: Sequence[tuple], measure: bool = True):
     from qiskit import QuantumCircuit
 
