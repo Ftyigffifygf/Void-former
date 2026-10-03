@@ -5,7 +5,7 @@ Entry point for initializing VirtualQuantumProcessor instances and quantum regis
 
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Optional, Union, Any
 import torch
 
 from voidformer.quantum.quantum_processor import VirtualQuantumProcessor
@@ -13,6 +13,15 @@ from voidformer.quantum.measurement import CollapseProtocol
 
 # Global registry of initialized quantum processors
 _PROCESSOR_REGISTRY: dict[str, VirtualQuantumProcessor] = {}
+
+
+def get_backend(kind: str = "simulator", **kw: Any) -> Any:
+    """Backend factory for PyTorch statevector simulator vs IBM Quantum backends."""
+    if kind == "simulator":
+        return None  # Use native PyTorch simulator
+    from voidformer.quantum.ibm_backend import IBMBackend
+    use_sim = (kind == "ibm_aer")
+    return IBMBackend(use_simulator=use_sim, **kw)
 
 
 def initialize_quantum_processor(
