@@ -45,10 +45,10 @@ class VoidFormerLosses(nn.Module):
         targets: torch.Tensor,
         embedding_weight: torch.Tensor,
     ) -> tuple[torch.Tensor, dict]:
-        # A. Language modelling (shift targets internally)
+        # A. Language modelling (shift targets internally, ignore padding token 0)
         logits = out.logits[:, :-1, :].contiguous()
         tgt = targets[:, 1:].contiguous()
-        l_lm = F.cross_entropy(logits.reshape(-1, logits.size(-1)), tgt.reshape(-1))
+        l_lm = F.cross_entropy(logits.reshape(-1, logits.size(-1)), tgt.reshape(-1), ignore_index=0)
 
         device = l_lm.device
 

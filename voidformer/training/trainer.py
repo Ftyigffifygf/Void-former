@@ -92,16 +92,18 @@ class Trainer:
                 g["lr"] = self._lr_at(step)
 
             self.optim.zero_grad(set_to_none=True)
-            out = self.model(ids, return_diagnostics=True)
-            loss, log = self.loss_fn(out, tgt, emb_w)
-
             if self.amp:
+                with torch.cuda.amp.autocast(enabled=self.amp):
+                    out = self.model(ids, return_diagnostics=True)
+                    loss, log = self.loss_fn(out, tgt, emb_w)
                 self.scaler.scale(loss).backward()
                 self.scaler.unscale_(self.optim)
                 nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
                 self.scaler.step(self.optim)
                 self.scaler.update()
             else:
+                out = self.model(ids, return_diagnostics=True)
+                loss, log = self.loss_fn(out, tgt, emb_w)
                 loss.backward()
                 nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
                 self.optim.step()

@@ -1,4 +1,4 @@
-"""Classroom Pipeline — Teacher Generation, Filtering, Training, Exam Evaluation & Round Logging."""
+"""Classroom Pipeline — Teacher Generation, Filtering, Student Distillation, Exam Evaluation & Round Logging."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def generate_teacher_lessons(teacher_model: torch.nn.Module, output_jsonl: str, 
                     gen_ids = ids
 
             gen_text = "".join([chr(tok.item() % 128) for tok in gen_ids[0]])
-            answer = gen_text[len(prompt):].strip() or "Quantum state vector superposition."
+            answer = gen_text[len(prompt):].strip()
 
             # Quality Filter: keep non-empty answers
             if len(answer) >= 3:
@@ -52,20 +52,49 @@ def generate_teacher_lessons(teacher_model: torch.nn.Module, output_jsonl: str, 
                 samples.append(obj)
                 f.write(json.dumps(obj) + "\n")
 
+    if not samples:
+        # If model is untrained, fallback to sample lesson dataset
+        samples = [
+            {"prompt": "What is quantum superposition?", "answer": "State overlap in Hilbert space."},
+            {"prompt": "Explain quantum entanglement.", "answer": "Non-local correlation between qubits."},
+        ]
+        with open(output_jsonl, "w", encoding="utf-8") as f:
+            for s in samples:
+                f.write(json.dumps(s) + "\n")
+
     return len(samples)
 
 
-def create_exam_jsonl(exam_jsonl: str):
+def create_held_out_exam_jsonl(exam_jsonl: str):
+    """Creates held-out exam dataset with prompts distinct from lesson prompts."""
     os.makedirs(os.path.dirname(os.path.abspath(exam_jsonl)), exist_ok=True)
     exam_data = [
-        {"prompt": "What is quantum superposition?", "answer": "State overlap in Hilbert space."},
-        {"prompt": "Explain quantum entanglement.", "answer": "Non-local correlation between qubits."},
-        {"prompt": "How does quantum interference work?", "answer": "Constructive and destructive phase cancellation."},
-        {"prompt": "Describe Born rule collapse.", "answer": "Probability calculation via amplitude squared."},
+        {"prompt": "Define decoherence time T2*", "answer": "Phase relaxation time constant."},
+        {"prompt": "What is quantum gate unitarity?", "answer": "Operator satisfying U dagger U equals I."},
+        {"prompt": "How does state fidelity measure overlap?", "answer": "Magnitude squared inner product of statevectors."},
+        {"prompt": "Explain Grover diffusion operator.", "answer": "Reflection about average state amplitude."},
     ]
     with open(exam_jsonl, "w", encoding="utf-8") as f:
         for item in exam_data:
             f.write(json.dumps(item) + "\n")
+
+
+class DistillationLossWrapper(torch.nn.Module):
+    """Loss wrapper combining VoidFormerLosses with DistillationLoss."""
+
+    def __init__(self, base_loss_fn: VoidFormerLosses, distill_loss_fn: DistillationLoss):
+        super().__init__()
+        self.base_loss_fn = base_loss_fn
+        self.distill_loss_fn = distill_loss_fn
+
+    def forward(self, out: Any, targets: torch.Tensor, embedding_weight: torch.Tensor) -> tuple[torch.Tensor, dict]:
+        base_loss, log = self.base_loss_fn(out, targets, embedding_weight)
+        logits = out.logits if hasattr(out, "logits") else out
+        d_loss = self.distill_loss_fn(logits, targets)
+        total = base_loss + d_loss
+        log["loss/distillation"] = d_loss.detach()
+        log["loss/total"] = total.detach()
+        return total, log
 
 
 def run_classroom_round(
@@ -75,6 +104,8 @@ def run_classroom_round(
     config_path: str = "voidformer/configs/tiny.yaml",
     rounds_dir: str = "runs",
     steps_per_round: int = 10,
+    lessons_file: str | None = None,
+    use_distillation: bool = True,
 ):
     round_dir = os.path.join(rounds_dir, f"round_{round_idx}")
     os.makedirs(round_dir, exist_ok=True)
@@ -89,23 +120,29 @@ def run_classroom_round(
 
     model_cfg = cfg.get("model", {})
 
-    # 1. Instantiate Teacher
-    teacher_model = create_model(
-        model_type="quantum",
-        vocab_size=model_cfg.get("vocab_size", 256),
-        d_model=model_cfg.get("d_model", 128),
-        n_layers=model_cfg.get("n_layers", 2),
-        n_heads=model_cfg.get("n_heads", 4),
-        d_ff=model_cfg.get("d_ff", 256),
-        max_seq_len=model_cfg.get("max_seq_len", 128),
-        use_vqc_layer=model_cfg.get("use_vqc_layer", True),
-    )
-    if teacher_ckpt and os.path.exists(teacher_ckpt):
-        load_checkpoint(teacher_ckpt, teacher_model)
+    # 1. Lesson dataset handling
+    if lessons_file and os.path.exists(lessons_file):
+        shutil.copy(lessons_file, lesson_file)
+        with open(lesson_file, "r", encoding="utf-8") as f:
+            num_generated = sum(1 for line in f if line.strip())
+    else:
+        teacher_model = create_model(
+            model_type="quantum",
+            vocab_size=model_cfg.get("vocab_size", 256),
+            d_model=model_cfg.get("d_model", 128),
+            n_layers=model_cfg.get("n_layers", 2),
+            n_heads=model_cfg.get("n_heads", 4),
+            d_ff=model_cfg.get("d_ff", 256),
+            max_seq_len=model_cfg.get("max_seq_len", 128),
+            use_vqc_layer=model_cfg.get("use_vqc_layer", True),
+        )
+        if teacher_ckpt and os.path.exists(teacher_ckpt):
+            load_checkpoint(teacher_ckpt, teacher_model)
 
-    # 2. Teacher Generates & Filters Lesson Dataset
-    num_generated = generate_teacher_lessons(teacher_model, lesson_file, num_lessons=20)
-    create_exam_jsonl(exam_file)
+        num_generated = generate_teacher_lessons(teacher_model, lesson_file, num_lessons=20)
+
+    # 2. Create held-out exam dataset
+    create_held_out_exam_jsonl(exam_file)
 
     # 3. Train Student Model
     student_model = create_model(
@@ -126,7 +163,12 @@ def run_classroom_round(
     )
 
     losses_cfg = cfg.get("losses", {})
-    loss_fn = VoidFormerLosses(LossWeights(**{k: v for k, v in losses_cfg.items() if k in LossWeights.__dataclass_fields__}))
+    base_loss_fn = VoidFormerLosses(LossWeights(**{k: v for k, v in losses_cfg.items() if k in LossWeights.__dataclass_fields__}))
+
+    if use_distillation:
+        loss_fn = DistillationLossWrapper(base_loss_fn, DistillationLoss())
+    else:
+        loss_fn = base_loss_fn
 
     cfg["training"]["total_steps"] = steps_per_round
     trainer = Trainer(model=student_model, loss_fn=loss_fn, train_loader=dataloader, cfg=cfg)
@@ -134,7 +176,7 @@ def run_classroom_round(
 
     save_checkpoint(student_ckpt, model=student_model, optimizer=trainer.optim, config=cfg, step=steps_per_round)
 
-    # 4. Exam Evaluation
+    # 4. Held-out Exam Evaluation
     eval_results = evaluate_checkpoint(
         checkpoint_path=student_ckpt,
         exam_file=exam_file,
@@ -146,7 +188,7 @@ def run_classroom_round(
     summary = {
         "round": round_idx,
         "student_model_type": student_model_type,
-        "lessons_generated": num_generated,
+        "lessons_count": num_generated,
         "student_checkpoint": student_ckpt,
         "exam_results": eval_results,
     }
@@ -162,6 +204,7 @@ def main():
     parser = argparse.ArgumentParser(description="Classroom Self-Play Training Loop")
     parser.add_argument("--rounds", type=int, default=2, help="Number of classroom rounds")
     parser.add_argument("--model-type", type=str, choices=["quantum", "classical"], default="quantum", help="Student model type")
+    parser.add_argument("--lessons-file", type=str, default=None, help="Optional external teacher lesson JSONL file")
     parser.add_argument("--config", type=str, default="voidformer/configs/tiny.yaml", help="Path to config")
     parser.add_argument("--steps-per-round", type=int, default=10, help="Training steps per round")
     args = parser.parse_args()
@@ -174,6 +217,7 @@ def main():
             student_model_type=args.model_type,
             config_path=args.config,
             steps_per_round=args.steps_per_round,
+            lessons_file=args.lessons_file,
         )
         teacher_ckpt = summary["student_checkpoint"]
 

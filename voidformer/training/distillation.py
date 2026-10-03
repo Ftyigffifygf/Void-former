@@ -36,6 +36,7 @@ class DistillationLoss(nn.Module):
         text_loss = F.cross_entropy(
             s_logits_shift.reshape(-1, s_logits_shift.size(-1)),
             tgt_shift.reshape(-1),
+            ignore_index=0,
         )
 
         if teacher_logits is not None and teacher_logits.shape == student_logits.shape:

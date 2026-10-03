@@ -58,7 +58,7 @@ async def list_models() -> ModelListResponse:
 @app.post("/v1/chat/completions")
 @app.post("/chat/completions")
 async def create_chat_completion(request: ChatCompletionRequest) -> Dict[str, Any]:
-    global GLOBAL_MODEL
+    global GLOBAL_MODEL, GLOBAL_MAX_SEQ_LEN
 
     if GLOBAL_MODEL is None:
         raise HTTPException(status_code=500, detail="Model not loaded")
@@ -69,6 +69,10 @@ async def create_chat_completion(request: ChatCompletionRequest) -> Dict[str, An
     prompt_text += "assistant: "
 
     prompt_tokens = [ord(c) % 256 for c in prompt_text]
+    # Crop to max sequence length to prevent out-of-bounds error
+    if len(prompt_tokens) > GLOBAL_MAX_SEQ_LEN:
+        prompt_tokens = prompt_tokens[-GLOBAL_MAX_SEQ_LEN:]
+
     ids = torch.tensor([prompt_tokens], dtype=torch.long)
 
     with torch.no_grad():
@@ -77,8 +81,8 @@ async def create_chat_completion(request: ChatCompletionRequest) -> Dict[str, An
         else:
             gen_ids = ids
 
-    gen_text = "".join([chr(tok.item() % 128) for tok in gen_ids[0]])
-    assistant_reply = gen_text[len(prompt_text):].strip() or "Quantum superposition response."
+    new_tokens = gen_ids[0][len(prompt_tokens):]
+    assistant_reply = "".join([chr(tok.item() % 128) for tok in new_tokens]).strip()
 
     return {
         "id": f"chatcmpl-{int(time.time()*1000)}",
@@ -97,8 +101,8 @@ async def create_chat_completion(request: ChatCompletionRequest) -> Dict[str, An
         ],
         "usage": {
             "prompt_tokens": len(prompt_tokens),
-            "completion_tokens": request.max_tokens,
-            "total_tokens": len(prompt_tokens) + request.max_tokens,
+            "completion_tokens": len(new_tokens),
+            "total_tokens": len(prompt_tokens) + len(new_tokens),
         },
     }
 

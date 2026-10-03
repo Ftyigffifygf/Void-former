@@ -12,6 +12,7 @@ from voidformer.harness.model_factory import create_model
 from voidformer.training.trainer import Trainer
 from voidformer.training.losses import VoidFormerLosses, LossWeights
 from voidformer.harness.data import create_dataloader
+from voidformer.datasets.lesson_dataset import create_lesson_dataloader
 from voidformer.utils.seed import set_seed
 from voidformer.utils.checkpoint import save_checkpoint
 
@@ -22,6 +23,7 @@ def parse_args():
     parser.add_argument("--model-type", type=str, choices=["quantum", "classical"], default="quantum", help="Model type")
     parser.add_argument("--steps", type=int, default=None, help="Override total steps")
     parser.add_argument("--output-dir", type=str, default=None, help="Output directory")
+    parser.add_argument("--lesson-file", type=str, default=None, help="Path to JSONL lesson file for training")
     parser.add_argument("--seed", type=int, default=1234, help="Random seed")
     return parser.parse_args()
 
@@ -67,12 +69,20 @@ def main():
     losses_cfg = cfg.get("losses", {})
     loss_fn = VoidFormerLosses(LossWeights(**{k: v for k, v in losses_cfg.items() if k in LossWeights.__dataclass_fields__}))
 
-    dataloader = create_dataloader(
-        vocab_size=model_cfg.get("vocab_size", 256),
-        seq_len=model_cfg.get("max_seq_len", 128),
-        batch_size=cfg.get("dataset", {}).get("batch_size", 4),
-        num_samples=100,
-    )
+    if args.lesson_file and os.path.exists(args.lesson_file):
+        print(f"Loading lesson dataset from {args.lesson_file}...")
+        dataloader = create_lesson_dataloader(
+            jsonl_file=args.lesson_file,
+            max_seq_len=model_cfg.get("max_seq_len", 128),
+            batch_size=cfg.get("dataset", {}).get("batch_size", 4),
+        )
+    else:
+        dataloader = create_dataloader(
+            vocab_size=model_cfg.get("vocab_size", 256),
+            seq_len=model_cfg.get("max_seq_len", 128),
+            batch_size=cfg.get("dataset", {}).get("batch_size", 4),
+            num_samples=100,
+        )
 
     trainer = Trainer(model=model, loss_fn=loss_fn, train_loader=dataloader, cfg=cfg)
 
